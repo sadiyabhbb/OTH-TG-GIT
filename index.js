@@ -11,6 +11,7 @@ require('./commands/mass')(bot);
 require('./commands/twofa')(bot);
 require('./commands/checkemail')(bot); // ✅ checkemail command
 require('./commands/uptime')(bot); // ⏱️ uptime command
+require('./commands/tempmail')(bot); // 📬 tempmail.plus checker
 
 // Keep-alive for Render
 http.createServer((req, res) => {
