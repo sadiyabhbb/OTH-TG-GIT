@@ -1,7 +1,4 @@
-const bot = require('../index');
-const { ADMIN_UID } = require('../config/botConfig');
-
-function notifyAdmin(uid, username, isRepeat = false) {
+function notifyAdmin(bot, uid, username, isRepeat = false) {
   const status = isRepeat ? "⏳ Already Pending" : "📩 Pending Approval";
   const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&");
 
@@ -15,7 +12,7 @@ function notifyAdmin(uid, username, isRepeat = false) {
     `🗑️ /remove \`${uid}\`\n` +
     `🚫 /ban \`${uid}\``;
 
-  bot.sendMessage(ADMIN_UID, message, { parse_mode: 'MarkdownV2' });
+  bot.sendMessage(process.env.ADMIN_UID, message, { parse_mode: 'MarkdownV2' });
 }
 
-module.exports = notifyAdmin;
+module.exports = { notifyAdmin };
