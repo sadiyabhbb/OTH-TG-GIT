@@ -9,6 +9,6 @@ module.exports = (bot) => {
       return bot.sendMessage(chatId, '❌ একটি সঠিক ইউজারনেম দিন।\n\n🧪 উদাহরণ:\n`.checkemail testuser`');
     }
 
-    await checkEmail(username, chatId);
+    await checkEmail(username, chatId, bot); // 🟢 bot পাঠানো বাধ্যতামূলক
   });
 };
