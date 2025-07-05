@@ -9,7 +9,7 @@ require('./commands/users')(bot);
 require('./commands/chk')(bot);
 require('./commands/mass')(bot);
 require('./commands/twofa')(bot);
-require('./utils/emailChecker')(bot); // ✅ fixed path
+require('./commands/checkemail')(bot); // ✅ checkemail command
 
 // Keep-alive for Render
 http.createServer((req, res) => {
