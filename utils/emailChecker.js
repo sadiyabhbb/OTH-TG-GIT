@@ -33,8 +33,8 @@ async function checkEmail(username, chatId, bot) {
           found = true;
           break;
         }
-      } catch (error) {
-        console.error(`Error checking ${email}:`, error.message);
+      } catch (err) {
+        console.error(`❌ Error checking ${email}:`, err.message);
       }
     }
 
@@ -43,9 +43,9 @@ async function checkEmail(username, chatId, bot) {
     }
 
   } catch (error) {
-    console.error('General error:', error);
-    bot.sendMessage(chatId, '⚠️ সার্ভারে সমস্যা হচ্ছে, পরে চেষ্টা করুন');
+    console.error('General error:', error.message);
+    await bot.sendMessage(chatId, '⚠️ সার্ভারে সমস্যা হচ্ছে, পরে চেষ্টা করুন');
   }
 }
 
-module.exports = checkEmail; // ✅ এই লাইনটা খুব দরকার
+module.exports = checkEmail;
