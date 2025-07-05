@@ -8,7 +8,7 @@ module.exports = (bot) => {
     const userId = msg.from.id;
     const username = msg.from.username || 'NoUsername';
 
-    const userDB = loadDB(); // ⬅️ Move inside
+    const userDB = loadDB();
 
     if (username === ADMIN_USERNAME || userId === ADMIN_UID) {
       return bot.sendMessage(chatId, `🎉 Welcome Admin!\nBot is ready to use!\n\n💳 Try /gen 515462`);
@@ -25,13 +25,13 @@ module.exports = (bot) => {
 
         bot.sendMessage(chatId, `⏳ Request sent. Please wait for admin approval.`);
         bot.sendMessage(chatId, `🧾 Your UID: \`${userId}\`\nSend this to the admin (@${ADMIN_USERNAME}) for approval.`, {
-          parse_mode: "Markdown"
+          parse_mode: "MarkdownV2"
         });
 
         notifyAdmin(bot, userId, username);
       } else {
         bot.sendMessage(chatId, `⏳ You are already in pending list.\n\n🧾 Your UID: \`${userId}\``, {
-          parse_mode: "Markdown"
+          parse_mode: "MarkdownV2"
         });
 
         notifyAdmin(bot, userId, username, true);
