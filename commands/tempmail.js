@@ -13,55 +13,56 @@ const DOMAINS = [
 ];
 
 module.exports = (bot) => {
-  bot.onText(/\.tempmail (.+)/, async (msg, match) => {
+  bot.onText(/\.tempmail (.+)/i, async (msg, match) => {
     const chatId = msg.chat.id;
-    const username = match[1].trim();
+    const username = match[1].trim().toLowerCase();
 
     if (!username || username.length < 3) {
-      return bot.sendMessage(chatId, '❌ একটি বৈধ ইউজারনেম দিন।\nউদাহরণ: `.tempmail testuser`');
+      return bot.sendMessage(chatId, '❌ একটি বৈধ ইউজারনেম দিন।\n\n📥 উদাহরণ: `.tempmail testuser`');
     }
 
     let found = false;
 
     for (const domain of DOMAINS) {
       const email = `${username}${domain}`;
-      const encodedEmail = encodeURIComponent(email);
+      const inboxUrl = `https://tempmail.plus/en/receiver/${encodeURIComponent(email)}`;
 
       try {
-        const url = `https://tempmail.plus/inbox/${encodedEmail}`;
-        const { data: html } = await axios.get(url);
+        const { data: html } = await axios.get(inboxUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
 
         const $ = cheerio.load(html);
-        const mail = $('.mail-item').first(); // প্রথম মেইল
-        const subject = mail.find('.subject').text().trim();
-        const from = mail.find('.from').text().trim();
-        const time = mail.find('.time').text().trim();
+        const mailItem = $('.inbox-dataList .inbox-dataList-item').first();
 
-        // OTP code extract (assuming number like 6 digits)
-        const bodyPreview = mail.find('.preview').text();
-        const otpMatch = bodyPreview.match(/\b\d{4,8}\b/);
-        const otpCode = otpMatch ? otpMatch[0] : 'Not Found';
+        if (mailItem && mailItem.length > 0) {
+          const subject = mailItem.find('.inboxSubject').text().trim() || 'No Subject';
+          const from = mailItem.find('.inboxSender').text().trim() || 'Unknown';
+          const time = mailItem.find('.inboxDate').text().trim() || 'Unknown';
+          const preview = mailItem.find('.inboxExcerpt').text().trim();
 
-        if (subject) {
+          const otpMatch = preview.match(/\b\d{4,8}\b/);
+          const otpCode = otpMatch ? `\`${otpMatch[0]}\`` : 'Not Found';
+
           const msgText = `
-📨 *ইমেইল পাওয়া গেছে!*
-✉️ *ঠিকানা:* \`${email}\`
-🧠 *বিষয়:* ${subject}
+📬 *ইমেইল পাওয়া গেছে!*
+✉️ *ইমেইল:* \`${email}\`
 📧 *প্রেরক:* ${from}
+🧠 *বিষয়:* ${subject}
 🕒 *সময়:* ${time}
-🔐 *OTP কোড:* \`${otpCode}\`
+🔐 *OTP কোড:* ${otpCode}
           `;
           await bot.sendMessage(chatId, msgText, { parse_mode: 'Markdown' });
           found = true;
           break;
         }
       } catch (err) {
-        console.error(`❌ ${email} check error:`, err.message);
+        console.error(`❌ Error fetching email for ${email}:`, err.message);
       }
     }
 
     if (!found) {
-      bot.sendMessage(chatId, `❌ ${username} নামে কোনো ইমেইল পাওয়া যায়নি টেম্পমেইল প্লাস-এ।`);
+      await bot.sendMessage(chatId, `❌ ${username} নামে কোনো ইমেইল পাওয়া যায়নি টেম্পমেইল প্লাস-এ।`);
     }
   });
 };
