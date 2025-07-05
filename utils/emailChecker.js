@@ -8,7 +8,7 @@ const DOMAINS = [
   '@gmail.com'
 ];
 
-async function checkEmail(bot, username, chatId) {
+async function checkEmail(username, chatId, bot) {
   try {
     let found = false;
 
@@ -48,4 +48,4 @@ async function checkEmail(bot, username, chatId) {
   }
 }
 
-module.exports = { checkEmail };
+module.exports = checkEmail; // ✅ এই লাইনটা খুব দরকার
