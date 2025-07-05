@@ -1,5 +1,4 @@
 const axios = require('axios');
-const bot = require('../index');
 
 const DOMAINS = [
   '@iicloud.com.vn',
@@ -9,7 +8,7 @@ const DOMAINS = [
   '@gmail.com'
 ];
 
-async function checkEmail(username, chatId) {
+async function checkEmail(bot, username, chatId) {
   try {
     let found = false;
 
@@ -49,4 +48,4 @@ async function checkEmail(username, chatId) {
   }
 }
 
-module.exports = checkEmail;
+module.exports = { checkEmail };
