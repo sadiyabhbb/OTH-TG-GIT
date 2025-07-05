@@ -3,12 +3,12 @@ const { notifyAdmin } = require('../utils/notifyAdmin');
 const { loadDB, saveDB } = require('../utils/db');
 
 module.exports = (bot) => {
-  const userDB = loadDB();
-
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const username = msg.from.username || 'NoUsername';
+
+    const userDB = loadDB(); // ⬅️ Move inside
 
     if (username === ADMIN_USERNAME || userId === ADMIN_UID) {
       return bot.sendMessage(chatId, `🎉 Welcome Admin!\nBot is ready to use!\n\n💳 Try /gen 515462`);
