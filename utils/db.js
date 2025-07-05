@@ -1,15 +1,17 @@
 const fs = require('fs');
-const path = require('path');
+const path = './users.json';
 
-const DB_PATH = path.join(__dirname, '..', 'users.json');
-let userDB = { approved: [], pending: [], banned: [] };
-
-if (fs.existsSync(DB_PATH)) {
-  userDB = JSON.parse(fs.readFileSync(DB_PATH));
+function loadDB() {
+  try {
+    const data = fs.readFileSync(path, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return { approved: [], pending: [], banned: [] };
+  }
 }
 
-function saveDB() {
-  fs.writeFileSync(DB_PATH, JSON.stringify(userDB, null, 2));
+function saveDB(data) {
+  fs.writeFileSync(path, JSON.stringify(data, null, 2));
 }
 
-module.exports = { userDB, saveDB };
+module.exports = { loadDB, saveDB };
