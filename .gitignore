@@ -1,0 +1,14 @@
+# node modules
+node_modules/
+
+# environment variables
+.env
+
+# logs
+*.log
+
+# system files
+.DS_Store
+
+# render build cache
+.cache/
