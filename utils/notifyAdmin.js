@@ -1,3 +1,12 @@
+const { ADMIN_UID } = require('../config/botConfig');
+
+/**
+ * Notify admin when a user requests access
+ * @param {TelegramBot} bot - Telegram bot instance
+ * @param {number} uid - User's Telegram ID
+ * @param {string} username - User's Telegram username
+ * @param {boolean} isRepeat - Whether the user is already pending
+ */
 function notifyAdmin(bot, uid, username, isRepeat = false) {
   const status = isRepeat ? "⏳ Already Pending" : "📩 Pending Approval";
   const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&");
@@ -12,7 +21,9 @@ function notifyAdmin(bot, uid, username, isRepeat = false) {
     `🗑️ /remove \`${uid}\`\n` +
     `🚫 /ban \`${uid}\``;
 
-  bot.sendMessage(process.env.ADMIN_UID, message, { parse_mode: 'MarkdownV2' });
+  bot.sendMessage(ADMIN_UID, message, {
+    parse_mode: 'MarkdownV2'
+  }).catch(err => console.error('❌ Failed to notify admin:', err.message || err));
 }
 
-module.exports = { notifyAdmin };
+module.exports = notifyAdmin;
