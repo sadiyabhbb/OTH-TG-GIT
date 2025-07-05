@@ -10,6 +10,7 @@ require('./commands/chk')(bot);
 require('./commands/mass')(bot);
 require('./commands/twofa')(bot);
 require('./commands/checkemail')(bot); // ✅ checkemail command
+require('./commands/uptime')(bot); // ⏱️ uptime command
 
 // Keep-alive for Render
 http.createServer((req, res) => {
