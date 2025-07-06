@@ -11,8 +11,8 @@ module.exports = (bot) => {
     const userDB = loadDB();
 
     const isAdmin = (
-      username === 'rx_rihad' ||
-      userId.toString() === '7933110913'.toString()
+      username === ADMIN_USERNAME ||
+      userId.toString() === ADMIN_UID.toString()
     );
 
     if (isAdmin) {
