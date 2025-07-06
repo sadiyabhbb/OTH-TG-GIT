@@ -8,10 +8,12 @@ module.exports = (bot) => {
     const data = query.data;
     const username = query.from.username || "NoUsername";
     const userId = query.from.id;
-    const isAdmin = (
-      username === ADMIN_USERNAME ||
-      userId.toString() === ADMIN_UID.toString()
-    );
+
+    const db = loadDB();
+    const isAdmin =
+      username?.toLowerCase() === ADMIN_USERNAME?.toLowerCase() ||
+      userId.toString() === ADMIN_UID.toString();
+    const isApproved = db.approved.includes(userId);
 
     try {
       switch (data) {
@@ -20,7 +22,7 @@ module.exports = (bot) => {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
             }
           });
 
@@ -29,7 +31,7 @@ module.exports = (bot) => {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
             }
           });
 
@@ -38,7 +40,7 @@ module.exports = (bot) => {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
             }
           });
 
@@ -57,14 +59,18 @@ module.exports = (bot) => {
             message_id: messageId,
             parse_mode: "Markdown",
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
             }
           });
 
         case 'users':
-          if (!isAdmin) return bot.answerCallbackQuery(query.id, { text: "⛔ Access Denied", show_alert: true });
+          if (!isAdmin) {
+            return bot.answerCallbackQuery(query.id, {
+              text: "⛔ Admin access only",
+              show_alert: true
+            });
+          }
 
-          const db = loadDB();
           const format = (arr) => arr.length ? arr.map(id => `\`${id}\``).join(', ') : '_None_';
           const usersText =
             `👥 *User List:*\n\n` +
@@ -82,7 +88,12 @@ module.exports = (bot) => {
           });
 
         case 'admin_panel':
-          if (!isAdmin) return bot.answerCallbackQuery(query.id, { text: "⛔ Admin access only", show_alert: true });
+          if (!isAdmin) {
+            return bot.answerCallbackQuery(query.id, {
+              text: "⛔ Admin access only",
+              show_alert: true
+            });
+          }
 
           return bot.editMessageText(`👑 Admin Panel for @${username}`, {
             chat_id: chatId,
@@ -103,22 +114,47 @@ module.exports = (bot) => {
           });
 
         case 'back':
-          return bot.editMessageText(`🎉 Welcome ${username}!\nUse the buttons below:`, {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: "💳 Gen", callback_data: "gen" },
-                  { text: "📩 TempMail", callback_data: "tempmail" }
-                ],
-                [
-                  { text: "🔐 2FA", callback_data: "2fa" },
-                  { text: "🕒 Uptime", callback_data: "uptime" }
+          if (isAdmin) {
+            return bot.editMessageText(`👑 Welcome Admin @${username}!`, {
+              chat_id: chatId,
+              message_id: messageId,
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "🧾 Users", callback_data: "users" }],
+                  [
+                    { text: "💳 Gen", callback_data: "gen" },
+                    { text: "📩 TempMail", callback_data: "tempmail" }
+                  ],
+                  [
+                    { text: "🔐 2FA", callback_data: "2fa" },
+                    { text: "🕒 Uptime", callback_data: "uptime" }
+                  ]
                 ]
-              ]
-            }
-          });
+              }
+            });
+          } else if (isApproved) {
+            return bot.editMessageText(`🎉 Welcome ${username}!\nUse the buttons below:`, {
+              chat_id: chatId,
+              message_id: messageId,
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: "💳 Gen", callback_data: "gen" },
+                    { text: "📩 TempMail", callback_data: "tempmail" }
+                  ],
+                  [
+                    { text: "🔐 2FA", callback_data: "2fa" },
+                    { text: "🕒 Uptime", callback_data: "uptime" }
+                  ]
+                ]
+              }
+            });
+          } else {
+            return bot.answerCallbackQuery(query.id, {
+              text: "⛔ Admin access only",
+              show_alert: true
+            });
+          }
 
         default:
           return bot.answerCallbackQuery(query.id, {
