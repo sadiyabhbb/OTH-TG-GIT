@@ -7,12 +7,9 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const uid = msg.from.id;
     const username = msg.from.username || 'NoUsername';
-    const userDB = loadDB();
 
-    const isApproved = userDB.approved.includes(uid);
-    const isBanned = userDB.banned.includes(uid);
-    const isPending = userDB.pending.includes(uid);
-    const isAdmin = uid === ADMIN_UID;
+    const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+    const isAdmin = uid === Number(ADMIN_UID); // Ensure same type
 
     const adminWelcome = 
 `👑 *Welcome, Admin!*
@@ -30,7 +27,7 @@ Need support?
 💬 Type */adminhelp* or contact the developer.`;
 
     const userWelcome = 
-`👤 *Welcome, ${username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}!*
+`👤 *Welcome, ${cleanUsername}!*
 
 We're glad to have you on *PremiumBot*.
 Let's give you the *best experience possible*.
@@ -46,13 +43,19 @@ Let's give you the *best experience possible*.
 
 Thanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
 
+    // Always load fresh userDB
+    const userDB = loadDB();
+    const isApproved = userDB.approved.includes(uid);
+    const isBanned = userDB.banned.includes(uid);
+    const isPending = userDB.pending.includes(uid);
+
     // ❌ If banned
     if (isBanned) {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
     }
 
-    // 👑 If approved OR is admin
-    if (isApproved || isAdmin) {
+    // ✅ If admin or approved
+    if (isAdmin || isApproved) {
       const message = isAdmin ? adminWelcome : userWelcome;
       const buttons = isAdmin
         ? [
