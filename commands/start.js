@@ -23,10 +23,12 @@ const saveDB = (data) => {
 module.exports = (bot, config) => {
   // ✅ /start command
   bot.onText(/^\/start$/, (msg) => {
-    const userDB = loadDB();
+    const chatId = msg.chat.id;
     const userId = msg.from.id;
     const username = msg.from.username || 'NoUsername';
     const fullName = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ');
+
+    const userDB = loadDB();
 
     const isAdmin =
       userId.toString() === config.ADMIN_UID ||
@@ -36,17 +38,19 @@ module.exports = (bot, config) => {
     const isPending = userDB.pending.includes(userId);
     const isBanned = userDB.banned.includes(userId);
 
+    // Add to user list
     if (!userDB.users.includes(userId)) {
       userDB.users.push(userId);
     }
 
+    // ❌ Banned user
     if (isBanned) {
-      return bot.sendMessage(userId, '🚫 আপনি এই বট ব্যবহার করতে নিষিদ্ধ!');
+      return bot.sendMessage(chatId, '🚫 আপনি এই বট ব্যবহার করতে নিষিদ্ধ!');
     }
 
-    // ✅ Admin Panel
+    // 👑 Admin panel
     if (isAdmin) {
-      return bot.sendMessage(userId, `👑 Admin Panel for @${username}`, {
+      return bot.sendMessage(chatId, `👑 Admin Panel for @${username}`, {
         reply_markup: {
           inline_keyboard: [
             [{ text: '🧾 Users', callback_data: 'admin_users' }],
@@ -63,9 +67,9 @@ module.exports = (bot, config) => {
       });
     }
 
-    // ✅ Approved user panel
+    // ✅ Approved user
     if (isApproved) {
-      return bot.sendMessage(userId, `👋 স্বাগতম ${fullName}!`, {
+      return bot.sendMessage(chatId, `👋 স্বাগতম ${fullName}!`, {
         reply_markup: {
           inline_keyboard: [
             [
@@ -86,7 +90,7 @@ module.exports = (bot, config) => {
       userDB.pending.push(userId);
       saveDB(userDB);
 
-      bot.sendMessage(userId, '📩 অনুরোধ পাঠানো হয়েছে! অনুগ্রহ করে অ্যাডমিনের অনুমতি অপেক্ষা করুন।');
+      bot.sendMessage(chatId, '📩 অনুরোধ পাঠানো হয়েছে! অনুগ্রহ করে অ্যাডমিনের অনুমতি অপেক্ষা করুন।');
 
       bot.sendMessage(config.ADMIN_UID, `🆕 *নতুন অ্যাক্সেস অনুরোধ*\n\n` +
         `👤 নাম: ${fullName}\n` +
@@ -102,65 +106,12 @@ module.exports = (bot, config) => {
           ]
         }
       });
+
+      return;
     } else {
-      bot.sendMessage(userId, '⏳ আপনার অনুরোধ প্রক্রিয়াধীন রয়েছে...');
+      bot.sendMessage(chatId, '⏳ আপনার অনুরোধ প্রক্রিয়াধীন রয়েছে...');
     }
 
     saveDB(userDB);
-  });
-
-  // ✅ Callback query
-  bot.on('callback_query', (query) => {
-    const data = query.data;
-    const userId = query.from.id.toString();
-    const userDB = loadDB();
-
-    const isAdmin = userId === config.ADMIN_UID;
-    const isApproved = userDB.approved.includes(parseInt(userId));
-
-    if (!isAdmin && !isApproved) {
-      return bot.answerCallbackQuery(query.id, { text: '❌ Access denied' });
-    }
-
-    // Approve/Ban logic
-    if (data.startsWith('approve_') || data.startsWith('ban_')) {
-      if (!isAdmin) return bot.answerCallbackQuery(query.id, { text: 'Unauthorized' });
-
-      const [, targetId] = data.split('_');
-      const targetUid = parseInt(targetId);
-
-      if (data.startsWith('approve_')) {
-        if (!userDB.approved.includes(targetUid)) userDB.approved.push(targetUid);
-        userDB.pending = userDB.pending.filter((id) => id !== targetUid);
-        bot.sendMessage(targetUid, '✅ আপনার অ্যাক্সেস অনুমোদন করা হয়েছে!');
-        bot.answerCallbackQuery(query.id, { text: 'User Approved ✅' });
-      } else {
-        if (!userDB.banned.includes(targetUid)) userDB.banned.push(targetUid);
-        userDB.pending = userDB.pending.filter((id) => id !== targetUid);
-        bot.sendMessage(targetUid, '🚫 আপনি নিষিদ্ধ হয়েছেন!');
-        bot.answerCallbackQuery(query.id, { text: 'User Banned ❌' });
-      }
-
-      saveDB(userDB);
-      return;
-    }
-
-    // Handle other buttons
-    switch (data) {
-      case 'admin_users':
-        if (!isAdmin) return bot.answerCallbackQuery(query.id, { text: 'Unauthorized' });
-        return bot.sendMessage(userId, '👥 Showing users list...');
-
-      case 'user_gen':
-        return bot.sendMessage(userId, '⚙️ CC Generator...');
-      case 'user_tempmail':
-        return bot.sendMessage(userId, '📬 TempMail inbox...');
-      case 'user_2fa':
-        return bot.sendMessage(userId, '🔐 Two-factor authentication...');
-      case 'user_uptime':
-        return bot.sendMessage(userId, '🕒 Bot uptime info...');
-      default:
-        return bot.answerCallbackQuery(query.id, { text: '❓ Unknown action' });
-    }
   });
 };
