@@ -15,7 +15,7 @@ const bot = new TelegramBot(token, {
   polling: true
 });
 
-// Load all commands
+// ✅ Load all command handlers
 require('./commands/start')(bot);
 require('./commands/gen')(bot);
 require('./commands/admin')(bot);
@@ -25,17 +25,18 @@ require('./commands/mass')(bot);
 require('./commands/twofa')(bot);
 require('./commands/checkemail')(bot);
 require('./commands/uptime')(bot);
+require('./commands/callbacks')(bot); // ✅ Added callback button handler
 
-// Render keep-alive HTTP server
+// 🌐 Render keep-alive HTTP server
 http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end('<h2>✅ Telegram Bot is Running</h2>');
 }).listen(process.env.PORT || 3000);
 
-// Handle unhandled promise rejections
+// 🛑 Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🔴 Unhandled Rejection:', reason);
 });
 
-// Log successful start
+// ✅ Log successful start
 console.log('✅ Bot is running...');
