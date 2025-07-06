@@ -1,10 +1,9 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 
 const DOMAINS = [
   '@tempmail.plus',
-  '@mailto.plus',
-  '@maildim.com',
-  '@lavaboxy.com'
+  '@mailto.plus'
 ];
 
 module.exports = (bot) => {
@@ -20,40 +19,43 @@ module.exports = (bot) => {
 
     for (const domain of DOMAINS) {
       const email = `${username}${domain}`;
-      const encodedEmail = encodeURIComponent(email);
-      const inboxApi = `https://api.tempmail.plus/v1/mails?email=${encodedEmail}&limit=1`;
+      const url = `https://tempmail.plus/en/#!/${username}${domain}`;
 
       try {
-        const response = await axios.get(inboxApi);
-        const mails = response.data.mail_list;
+        const { data: html } = await axios.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0'
+          }
+        });
 
-        if (mails && mails.length > 0) {
-          const mail = mails[0];
+        const $ = cheerio.load(html);
+        const mailItem = $('.mail_list .msg').first();
 
-          // Fetch full content of email (for accurate OTP)
-          const fullMailUrl = `https://api.tempmail.plus/v1/mail/${mail.mail_id}`;
-          const fullMailRes = await axios.get(fullMailUrl);
-          const fullMail = fullMailRes.data;
+        if (!mailItem || !mailItem.attr('data-id')) continue;
 
-          const htmlContent = fullMail.mail_html || fullMail.mail_text || '';
-          const otpMatch = htmlContent.match(/\b\d{4,8}\b/);
-          const otp = otpMatch ? otpMatch[0] : 'Not Found';
+        const subject = mailItem.find('.subject').text().trim();
+        const from = mailItem.find('.from').text().trim();
+        const time = mailItem.find('.time').text().trim();
+        const preview = mailItem.find('.msg_body').text().trim();
 
-          const message = `
+        const otpMatch = preview.match(/\b\d{4,8}\b/);
+        const otp = otpMatch ? otpMatch[0] : 'Not Found';
+
+        const reply = `
 📨 *ইমেইল পাওয়া গেছে!*
 ✉️ *ঠিকানা:* \`${email}\`
-📧 *প্রেরক:* ${fullMail.from || 'Unknown'}
-📝 *বিষয়:* ${fullMail.subject || 'No Subject'}
-🕒 *সময়:* ${fullMail.send_time || 'Unknown'}
+📧 *প্রেরক:* ${from || 'Unknown'}
+📝 *বিষয়:* ${subject || 'No Subject'}
+🕒 *সময়:* ${time || 'Unknown'}
 🔐 *OTP কোড:* \`${otp}\`
-          `;
-          await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-          found = true;
-          break;
-        }
+        `.trim();
+
+        await bot.sendMessage(chatId, reply, { parse_mode: 'Markdown' });
+        found = true;
+        break;
 
       } catch (err) {
-        console.error(`Error checking ${email}:`, err.message);
+        console.error(`❌ ${email} failed: ${err.message}`);
       }
     }
 
