@@ -7,54 +7,25 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const uid = msg.from.id;
     const username = msg.from.username || 'NoUsername';
-
     const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
     const isAdmin = uid === Number(ADMIN_UID);
-
-    const adminWelcome =
-`👑 *Welcome, Admin!*
-You've entered the *premium control panel* of *PremiumBot*\\.
-
-🔧 *Your access includes:*
-📊 Monitor user activity  
-🧑‍💻 Manage users \\& roles  
-⚙️ Configure features \\& limits  
-📈 Track system stats
-
-🛡️ *Use commands responsibly* to ensure smooth performance\\.
-
-Need support?  
-💬 Type */adminhelp* or contact the developer\\.`;
-
-
-    const userWelcome =
-`👤 *Welcome, ${cleanUsername}!*
-
-We're glad to have you on *PremiumBot*\\.
-Let's give you the *best experience possible*\\.
-
-🚀 *What you get:*  
-✅ Fast \\& reliable service  
-💎 Premium\\-quality features  
-🔒 End\\-to\\-end data privacy  
-🧠 Smart \\& user\\-friendly interface
-
-🟢 *To begin:*  
-➡️ Type */start*
-
-Thanks for joining — let's make it simple, fast \\& premium\\. 🧡🤖`;
 
     const userDB = loadDB();
     const isApproved = userDB.approved.includes(uid);
     const isBanned = userDB.banned.includes(uid);
     const isPending = userDB.pending.includes(uid);
 
+    // ❌ যদি banned হয়
     if (isBanned) {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
     }
 
+    // 👑 Admin বা ✅ Approved হলে
     if (isAdmin || isApproved) {
-      const message = isAdmin ? adminWelcome : userWelcome;
+      const message = isAdmin
+        ? `👑 *Welcome, Admin!*\nYou've entered the premium control panel of *PremiumBot*.\n\n🔧 *Your access includes:*\n📊 Monitor user activity\n🧑‍💻 Manage users \\& roles\n⚙️ Configure features \\& limits\n📈 Track system stats\n\n🛡 *Use commands responsibly to ensure smooth performance.*\n\nNeed support?\n💬 Type */adminhelp* or contact the developer.`
+        : `👤 *Welcome, ${cleanUsername}!*\n\nWe're glad to have you on *PremiumBot*.\nLet's give you the *best experience possible*.\n\n🚀 *What you get:*\n✅ Fast \\& reliable service\n💎 Premium\\-quality features\n🔒 End\\-to\\-end data privacy\n🧠 Smart \\& user\\-friendly interface\n\n🟢 *To begin:*\n➡️ Type */start*\n\nThanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
+
       const buttons = isAdmin
         ? [
             [{ text: "📄 Users", callback_data: "users" }],
@@ -80,19 +51,19 @@ Thanks for joining — let's make it simple, fast \\& premium\\. 🧡🤖`;
 
       return bot.sendMessage(chatId, message, {
         parse_mode: 'MarkdownV2',
-        reply_markup: { inline_keyboard: buttons }
+        reply_markup: {
+          inline_keyboard: buttons
+        }
       });
     }
 
+    // ⏳ Pending user হলে admin কে notify করো
     if (!isPending) {
       userDB.pending.push(uid);
       saveDB(userDB);
     }
 
-    bot.sendMessage(chatId,
-      `⏳ Your access is pending approval by @${ADMIN_USERNAME}\\.\\nPlease wait\\.`,
-      { parse_mode: 'MarkdownV2' }
-    );
+    bot.sendMessage(chatId, `⏳ Your access is pending approval by @${ADMIN_USERNAME}.\nPlease wait...`);
     notifyAdmin(bot, uid, username, isPending);
   });
 };
