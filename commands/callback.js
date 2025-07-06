@@ -2,30 +2,71 @@ module.exports = (bot) => {
   bot.on('callback_query', async (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
+    const messageId = query.message.message_id;
 
     await bot.answerCallbackQuery(query.id);
 
     switch (data) {
       case 'gen':
-        return bot.sendMessage(chatId, '💳 Use `.gen 545454xxxxxxxxxx|xx|xx` to generate cards.');
+        return bot.editMessageText(
+          '💳 Use `.gen 545454xxxxxxxxxx|xx|xx` to generate cards.',
+          {
+            chat_id: chatId,
+            message_id: messageId,
+            parse_mode: "Markdown"
+          }
+        );
 
       case 'tempmail':
-        return bot.sendMessage(chatId, '📩 Use `.tempmail` to get a temp email inbox.');
+        return bot.editMessageText(
+          '📩 Use `.tempmail` to get a temp email inbox.',
+          {
+            chat_id: chatId,
+            message_id: messageId
+          }
+        );
 
       case '2fa':
-        return bot.sendMessage(chatId, '🔐 Use `.2fa email@example.com` to get OTP.');
+        return bot.editMessageText(
+          '🔐 Use `.2fa email@example.com` to get OTP.',
+          {
+            chat_id: chatId,
+            message_id: messageId
+          }
+        );
 
       case 'uptime':
-        return bot.sendMessage(chatId, '🕒 Bot is up and running!');
+        return bot.editMessageText(
+          '🕒 Bot is up and running!',
+          {
+            chat_id: chatId,
+            message_id: messageId
+          }
+        );
 
       case 'users':
-        return bot.sendMessage(chatId, '👥 Admin user stats coming soon...');
+        return bot.editMessageText(
+          '👥 Admin user stats coming soon...',
+          {
+            chat_id: chatId,
+            message_id: messageId
+          }
+        );
 
       case 'admin_panel':
-        return bot.sendMessage(chatId, '⚙️ Admin panel is under development.');
+        return bot.editMessageText(
+          '⚙️ Admin panel is under development.',
+          {
+            chat_id: chatId,
+            message_id: messageId
+          }
+        );
 
       default:
-        return bot.sendMessage(chatId, '⚠️ Unknown action.');
+        return bot.editMessageText('❌ Unknown action.', {
+          chat_id: chatId,
+          message_id: messageId
+        });
     }
   });
 };
