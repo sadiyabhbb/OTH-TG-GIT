@@ -5,6 +5,7 @@ const { generateValidCard, getBinInfo, createCCMessage } = require('../utils/car
 module.exports = (bot) => {
   const userDB = loadDB();
 
+  // 🔹 Traditional /gen command
   bot.onText(/\/gen (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -23,5 +24,12 @@ module.exports = (bot) => {
     const message = createCCMessage(bin, binInfo, cards);
 
     await bot.sendMessage(chatId, message.text, message.options);
+  });
+};
+
+// ✅ Callback support: Ask user to enter BIN
+module.exports.runGenInline = async (bot, chatId) => {
+  await bot.sendMessage(chatId, '💳 দয়া করে একটি BIN দিন:\n\nউদাহরণ:\n`/gen 515462`', {
+    parse_mode: 'Markdown'
   });
 };
