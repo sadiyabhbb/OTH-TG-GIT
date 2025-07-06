@@ -1,58 +1,66 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 
+// 1. ডোমেইন লিস্ট
 const TEMPMAIL_DOMAINS = [
   '@mailto.plus',
   '@fexpost.com',
   '@fexbox.org',
   '@mailbox.in.ua',
   '@rover.info',
-  '@chitthi.in',
-  '@fextemp.com',
-  '@any.pink',
-  '@merepost.com'
 ];
 
-async function checkTempMail(username, chatId, bot) {
-  try {
-    let found = false;
-
-    for (const domain of TEMPMAIL_DOMAINS) {
+// 2. API বেসড টেম্পমেইল চেক
+async function checkByAPI(username) {
+  for (const domain of TEMPMAIL_DOMAINS) {
+    try {
       const email = `${username}${domain}`;
-      const apiUrl = `https://api.tempmail.plus/v1/mails?email=${encodeURIComponent(email)}`;
-
-      try {
-        const response = await axios.get(apiUrl);
-        const mails = response.data?.mail_list;
-
-        if (Array.isArray(mails) && mails.length > 0) {
-          const mail = mails[0]; // সর্বশেষ মেইল
-
-          const msg = `
-📩 *ইমেইল পাওয়া গেছে!*
-✉️ *ঠিকানা:* \`${email}\`
-🕒 *সময়:* ${mail.mail_date || 'Unknown'}
-📧 *প্রেরক:* ${mail.mail_from || 'Unknown'}
-📝 *বিষয়:* ${mail.mail_subject || 'No Subject'}
-🔢 *সারাংশ:* ${mail.mail_excerpt || 'Not Available'}
-          `;
-          await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
-          found = true;
-          break;
-        }
-      } catch (err) {
-        console.error(`Tempmail check failed for ${email}:`, err.message);
-      }
+      const response = await axios.get(`https://api.tempmail.plus/v1/mails?email=${encodeURIComponent(email)}`);
+      return response.data?.mail_list || [];
+    } catch (error) {
+      continue;
     }
+  }
+  return [];
+}
 
-    if (!found) {
-      await bot.sendMessage(chatId, `❌ *${username}* নামে কোনো ইমেইল পাওয়া যায়নি।`, {
-        parse_mode: 'Markdown'
+// 3. স্ক্র্যাপিং বেসড টেম্পমেইল চেক
+async function checkByScraping(username) {
+  const email = `${username}@tempmail.plus`;
+  try {
+    const { data: html } = await axios.get(`https://tempmail.plus/en/#!/${email}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    
+    const $ = cheerio.load(html);
+    const mails = [];
+    
+    $('.mail_list .msg').each((i, el) => {
+      mails.push({
+        from: $(el).find('.from').text().trim(),
+        subject: $(el).find('.subject').text().trim(),
+        time: $(el).find('.time').text().trim(),
+        preview: $(el).find('.msg_body').text().trim()
       });
-    }
-  } catch (err) {
-    console.error('Tempmail general error:', err.message);
-    await bot.sendMessage(chatId, '⚠️ সার্ভারে সমস্যা হচ্ছে, পরে চেষ্টা করুন।');
+    });
+    
+    return mails;
+  } catch (error) {
+    return [];
   }
 }
 
-module.exports = checkTempMail;
+// 4. মেইন ইউটিলিটি ফাংশন
+module.exports = (bot) => {
+  // API বেসড চেক
+  bot.onText(/\/checkmail (.+)/, async (msg, match) => {
+    const mails = await checkByAPI(match[1].trim());
+    // রেসপন্স হ্যান্ডেলিং...
+  });
+
+  // স্ক্র্যাপিং বেসড চেক
+  bot.onText(/\.tempmail (.+)/, async (msg, match) => {
+    const mails = await checkByScraping(match[1].trim());
+    // রেসপন্স হ্যান্ডেলিং...
+  });
+};
