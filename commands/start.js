@@ -15,25 +15,6 @@ module.exports = (bot) => {
       userId.toString() === ADMIN_UID.toString()
     );
 
-    if (isAdmin) {
-      return bot.sendMessage(chatId, `👑 Welcome Admin @${username}!`, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "🧾 Users", callback_data: "users" }],
-            [{ text: "⚙️ Panel", callback_data: "admin_panel" }],
-            [
-              { text: "💳 Gen", callback_data: "gen" },
-              { text: "📩 TempMail", callback_data: "tempmail" }
-            ],
-            [
-              { text: "🔐 2FA", callback_data: "2fa" },
-              { text: "🕒 Uptime", callback_data: "uptime" }
-            ]
-          ]
-        }
-      }).catch(err => console.error('Admin welcome error:', err));
-    }
-
     // 🛑 If banned
     if (userDB.banned.includes(userId)) {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.')
@@ -41,7 +22,7 @@ module.exports = (bot) => {
     }
 
     // ⏳ If pending approval
-    if (!userDB.approved.includes(userId)) {
+    if (!userDB.approved.includes(userId) && !isAdmin) {
       if (!userDB.pending.includes(userId)) {
         userDB.pending.push(userId);
         saveDB(userDB);
@@ -64,10 +45,14 @@ module.exports = (bot) => {
       return;
     }
 
-    // ✅ Approved user
-    return bot.sendMessage(chatId, `🎉 Welcome ${username}!\nUse the buttons below:`, {
-      reply_markup: {
-        inline_keyboard: [
+    // ✅ Approved user or admin
+    const welcomeText = isAdmin
+      ? `👑 Welcome Admin @${username}!`
+      : `🎉 Welcome ${username}!\nUse the buttons below:`;
+
+    const buttons = isAdmin
+      ? [
+          [{ text: "🧾 Users", callback_data: "users" }],
           [
             { text: "💳 Gen", callback_data: "gen" },
             { text: "📩 TempMail", callback_data: "tempmail" }
@@ -77,7 +62,22 @@ module.exports = (bot) => {
             { text: "🕒 Uptime", callback_data: "uptime" }
           ]
         ]
-      }
-    }).catch(err => console.error('Approved user message error:', err));
+      : [
+          [
+            { text: "💳 Gen", callback_data: "gen" },
+            { text: "📩 TempMail", callback_data: "tempmail" }
+          ],
+          [
+            { text: "🔐 2FA", callback_data: "2fa" },
+            { text: "🕒 Uptime", callback_data: "uptime" }
+          ]
+        ];
+
+    return bot.sendMessage(chatId, welcomeText, {
+      reply_markup: {
+        inline_keyboard: buttons
+      },
+      parse_mode: "Markdown"
+    }).catch(err => console.error('Start message error:', err));
   });
 };
