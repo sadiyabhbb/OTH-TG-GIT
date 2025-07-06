@@ -95,22 +95,25 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
           ]
         ];
 
+    // 🟨 Always include Back button when message is edited
     if (callbackId && messageId) {
-      // 🔁 Edit message on back press
       bot.answerCallbackQuery(callbackId);
       return bot.editMessageText(message, {
         chat_id: chatId,
         message_id: messageId,
         parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: buttons }
-      });
-    } else {
-      // 🔰 Normal /start command
-      return bot.sendMessage(chatId, message, {
-        parse_mode: 'Markdown',
-        reply_markup: { inline_keyboard: buttons }
+        reply_markup: {
+          inline_keyboard: [...buttons, [{ text: "🔙 Back", callback_data: "back" }]]
+        }
       });
     }
+
+    return bot.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: buttons
+      }
+    });
   }
 
   // ⏳ If not approved, mark as pending
