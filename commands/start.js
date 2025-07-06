@@ -11,9 +11,28 @@ module.exports = (bot) => {
     const userDB = loadDB();
 
     const isAdmin = (
-      username === ADMIN_USERNAME ||
+      username?.toLowerCase() === ADMIN_USERNAME?.toLowerCase() ||
       userId.toString() === ADMIN_UID.toString()
     );
+
+    if (isAdmin) {
+      return bot.sendMessage(chatId, `👑 Welcome Admin @${username}!`, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🧾 Users", callback_data: "users" }],
+            // ✅ Removed "⚙️ Panel" button (was unnecessary)
+            [
+              { text: "💳 Gen", callback_data: "gen" },
+              { text: "📩 TempMail", callback_data: "tempmail" }
+            ],
+            [
+              { text: "🔐 2FA", callback_data: "2fa" },
+              { text: "🕒 Uptime", callback_data: "uptime" }
+            ]
+          ]
+        }
+      }).catch(err => console.error('Admin welcome error:', err));
+    }
 
     // 🛑 If banned
     if (userDB.banned.includes(userId)) {
@@ -22,7 +41,7 @@ module.exports = (bot) => {
     }
 
     // ⏳ If pending approval
-    if (!userDB.approved.includes(userId) && !isAdmin) {
+    if (!userDB.approved.includes(userId)) {
       if (!userDB.pending.includes(userId)) {
         userDB.pending.push(userId);
         saveDB(userDB);
@@ -45,14 +64,10 @@ module.exports = (bot) => {
       return;
     }
 
-    // ✅ Approved user or admin
-    const welcomeText = isAdmin
-      ? `👑 Welcome Admin @${username}!`
-      : `🎉 Welcome ${username}!\nUse the buttons below:`;
-
-    const buttons = isAdmin
-      ? [
-          [{ text: "🧾 Users", callback_data: "users" }],
+    // ✅ Approved user
+    return bot.sendMessage(chatId, `🎉 Welcome ${username}!\nUse the buttons below:`, {
+      reply_markup: {
+        inline_keyboard: [
           [
             { text: "💳 Gen", callback_data: "gen" },
             { text: "📩 TempMail", callback_data: "tempmail" }
@@ -62,22 +77,7 @@ module.exports = (bot) => {
             { text: "🕒 Uptime", callback_data: "uptime" }
           ]
         ]
-      : [
-          [
-            { text: "💳 Gen", callback_data: "gen" },
-            { text: "📩 TempMail", callback_data: "tempmail" }
-          ],
-          [
-            { text: "🔐 2FA", callback_data: "2fa" },
-            { text: "🕒 Uptime", callback_data: "uptime" }
-          ]
-        ];
-
-    return bot.sendMessage(chatId, welcomeText, {
-      reply_markup: {
-        inline_keyboard: buttons
-      },
-      parse_mode: "Markdown"
-    }).catch(err => console.error('Start message error:', err));
+      }
+    }).catch(err => console.error('Approved user message error:', err));
   });
 };
