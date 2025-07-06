@@ -1,66 +1,92 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-
-const DOMAINS = [
-  '@tempmail.plus',
-  '@mailto.plus'
-];
+const { checkByAPI, checkByScraping } = require('../utils/tempmail');
 
 module.exports = (bot) => {
-  bot.onText(/\.tempmail (.+)/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const username = match[1].trim();
+    // API বেসড টেম্পমেইল চেক (সাধারণ মেইল)
+    bot.onText(/\/checkmail (.+)/, async (msg, match) => {
+        const chatId = msg.chat.id;
+        const username = match[1].trim();
+        
+        if (!username || username.length < 3) {
+            return bot.sendMessage(chatId, '⚠️ ব্যবহার: /checkmail username\n(username-এ কোন স্পেস বা @ থাকবে না)');
+        }
 
-    if (!username || username.length < 3) {
-      return bot.sendMessage(chatId, '❌ একটি বৈধ ইউজারনেম দিন।\nউদাহরণ: `.tempmail testuser`');
-    }
+        try {
+            const mails = await checkByAPI(username);
+            
+            if (mails.length === 0) {
+                return bot.sendMessage(chatId, `❌ "${username}" এর জন্য কোন মেইল পাওয়া যায়নি`);
+            }
 
-    let found = false;
+            const mail = mails[0]; // সর্বশেষ মেইল
+            const message = `
+✉️ *ইমেইল পাওয়া গেছে!*
+📧 *প্রেরক:* ${mail.mail_from || 'Unknown'}
+📝 *বিষয়:* ${mail.mail_subject || 'No Subject'}
+🕒 *সময়:* ${mail.mail_date || 'Unknown'}
+🔢 *সারাংশ:* ${mail.mail_excerpt || 'N/A'}
 
-    for (const domain of DOMAINS) {
-      const email = `${username}${domain}`;
-      const url = `https://tempmail.plus/en/#!/${username}${domain}`;
+/checkmail ${username} - আবার চেক করতে
+`.trim();
 
-      try {
-        const { data: html } = await axios.get(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0'
-          }
-        });
+            bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
 
-        const $ = cheerio.load(html);
-        const mailItem = $('.mail_list .msg').first();
+        } catch (error) {
+            console.error('API Error:', error);
+            bot.sendMessage(chatId, '🚨 সিস্টেমে সমস্যা হয়েছে, পরে আবার চেষ্টা করুন');
+        }
+    });
 
-        if (!mailItem || !mailItem.attr('data-id')) continue;
+    // স্ক্র্যাপিং বেসড টেম্পমেইল চেক (OTP সহ)
+    bot.onText(/\/otpmail (.+)/, async (msg, match) => {
+        const chatId = msg.chat.id;
+        const username = match[1].trim();
+        
+        if (!username || username.length < 3) {
+            return bot.sendMessage(chatId, '⚠️ ব্যবহার: /otpmail username\n(OTP পেতে বিশেষভাবে উপযোগী)');
+        }
 
-        const subject = mailItem.find('.subject').text().trim();
-        const from = mailItem.find('.from').text().trim();
-        const time = mailItem.find('.time').text().trim();
-        const preview = mailItem.find('.msg_body').text().trim();
+        try {
+            const mails = await checkByScraping(username);
+            
+            if (mails.length === 0) {
+                return bot.sendMessage(chatId, `❌ "${username}@tempmail.plus" এ কোন OTP মেইল পাওয়া যায়নি`);
+            }
 
-        const otpMatch = preview.match(/\b\d{4,8}\b/);
-        const otp = otpMatch ? otpMatch[0] : 'Not Found';
+            const mail = mails[0];
+            const otp = mail.preview.match(/\b\d{4,8}\b/)?.[0] || 'OTP খুঁজে পাওয়া যায়নি';
+            
+            const message = `
+💌 *OTP ইমেইল পাওয়া গেছে!*
+🔢 *OTP কোড:* \`${otp}\`
+📧 *প্রেরক:* ${mail.from || 'Unknown'}
+📝 *বিষয়:* ${mail.subject || 'No Subject'}
+🕒 *সময়:* ${mail.time || 'Unknown'}
 
-        const reply = `
-📨 *ইমেইল পাওয়া গেছে!*
-✉️ *ঠিকানা:* \`${email}\`
-📧 *প্রেরক:* ${from || 'Unknown'}
-📝 *বিষয়:* ${subject || 'No Subject'}
-🕒 *সময়:* ${time || 'Unknown'}
-🔐 *OTP কোড:* \`${otp}\`
-        `.trim();
+/otpmail ${username} - আবার চেক করতে
+`.trim();
 
-        await bot.sendMessage(chatId, reply, { parse_mode: 'Markdown' });
-        found = true;
-        break;
+            bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
 
-      } catch (err) {
-        console.error(`❌ ${email} failed: ${err.message}`);
-      }
-    }
+        } catch (error) {
+            console.error('Scraping Error:', error);
+            bot.sendMessage(chatId, '🚨 ওয়েবসাইটে সমস্যা হয়েছে, পরে আবার চেষ্টা করুন');
+        }
+    });
 
-    if (!found) {
-      bot.sendMessage(chatId, `❌ ${username} নামে কোনো ইমেইল পাওয়া যায়নি টেম্পমেইল প্লাস-এ।`);
-    }
-  });
+    // হেল্প মেসেজ
+    bot.onText(/\/mailhelp/, (msg) => {
+        const helpText = `
+📮 *টেম্পমেইল হেল্প*
+
+/checkmail username - সাধারণ মেইল চেক করতে
+/otpmail username  - OTP মেইল খুঁজতে (দ্রুত)
+        
+⚙️ *নিয়ম:*
+1. username-এ শুধু ইংরেজি অক্ষর/নাম্বার
+2. কোন স্পেস বা @ চিহ্ন ব্যবহার করবেন না
+3. মেইল 24 ঘন্টার জন্য বৈধ
+`.trim();
+        
+        bot.sendMessage(msg.chat.id, helpText, { parse_mode: 'Markdown' });
+    });
 };
