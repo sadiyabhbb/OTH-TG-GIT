@@ -6,35 +6,20 @@ module.exports = (bot) => {
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
-    const username = msg.from.username || 'NoUsername';
     const fullName = `${msg.from.first_name || ''} ${msg.from.last_name || ''}`.trim();
-
-    const userDB = loadDB();
+    const username = msg.from.username || 'NoUsername';
     const BOT_NAME = process.env.BOT_NAME || "PremiumBot";
 
+    const userDB = loadDB();
+
     const isAdmin = (
-      username.toLowerCase() === ADMIN_USERNAME.toLowerCase() ||
+      username?.toLowerCase() === ADMIN_USERNAME?.toLowerCase() ||
       userId.toString() === ADMIN_UID.toString()
     );
 
-    // 👑 Admin Welcome
+    // ✅ Admin Welcome Panel
     if (isAdmin) {
-      return bot.sendMessage(chatId, `🛠️ *Admin Panel Access:*
-
-👑 *Welcome, Admin ${fullName}!*  
-You’ve entered the *premium control panel* of *${BOT_NAME}*.
-
-🛠️ *Your access includes:*  
-📊 *Monitor user activity*  
-🧑‍💻 *Manage users & roles*  
-⚙️ *Configure features & limits*  
-📈 *Track system stats*
-
-🛡️ *Use commands responsibly* to ensure smooth performance.
-
-💬 Need support?  
-💭 Type */adminhelp* or contact the developer.
-`, {
+      return bot.sendMessage(chatId, `👑 *Welcome, Admin!*\nYou’ve entered the premium control panel of *${BOT_NAME}*.\n\n🔧 *Your access includes:*\n📊 Monitor user activity\n🧑‍💻 Manage users & roles\n⚙️ Configure features & limits\n📈 Track system stats\n\n🛡 Use commands responsibly to ensure smooth performance.\n\nNeed support?\n💬 Type */adminhelp* or contact the developer.`, {
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
@@ -52,53 +37,73 @@ You’ve entered the *premium control panel* of *${BOT_NAME}*.
       }).catch(err => console.error('Admin welcome error:', err));
     }
 
-    // 🚫 Banned User
+    // 🛑 If banned
     if (userDB.banned.includes(userId)) {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.')
         .catch(err => console.error('Banned message error:', err));
     }
 
-    // ⏳ Not Approved
+    // ⏳ If pending approval
     if (!userDB.approved.includes(userId)) {
       if (!userDB.pending.includes(userId)) {
         userDB.pending.push(userId);
         saveDB(userDB);
 
-        bot.sendMessage(chatId, `⏳ Request sent. Please wait for admin approval.`)
-          .catch(err => console.error('Pending request error:', err));
-
-        bot.sendMessage(chatId, `🧾 Your UID: \`${userId}\`\nSend this to the admin (@${ADMIN_USERNAME}) for approval.`, {
-          parse_mode: "Markdown"
-        }).catch(err => console.error('UID info error:', err));
-
         notifyAdmin(bot, userId, username);
+
+        return bot.sendMessage(chatId, `🚫 *Access Restricted*
+
+👋 *Hello!*  
+Thank you for your interest in using *${BOT_NAME}*.
+
+To ensure a secure and high-quality experience, access is limited to *authorized users only*.
+
+🆔 *Your Telegram User ID:* \`${userId}\`  
+📩 *Please contact the administrator to request access:* @${ADMIN_USERNAME}
+
+Upon approval, you will gain full access to:  
+✨ *Premium features*  
+🚀 *Fast and reliable service*  
+📜 *Data privacy and security*
+
+🙏 *We appreciate your understanding and cooperation.*  
+— *The ${BOT_NAME} Team* 🤖`, {
+          parse_mode: "Markdown"
+        }).catch(err => console.error('Pending request error:', err));
       } else {
-        bot.sendMessage(chatId, `⏳ You are already in pending list.\n\n🧾 Your UID: \`${userId}\``, {
+        notifyAdmin(bot, userId, username, true);
+        return bot.sendMessage(chatId, `🚫 *Access Restricted*
+
+👋 *Hello!*  
+Thank you for your interest in using *${BOT_NAME}*.
+
+To ensure a secure and high-quality experience, access is limited to *authorized users only*.
+
+🆔 *Your Telegram User ID:* \`${userId}\`  
+📩 *Please contact the administrator to request access:* @${ADMIN_USERNAME}
+
+Upon approval, you will gain full access to:  
+✨ *Premium features*  
+🚀 *Fast and reliable service*  
+📜 *Data privacy and security*
+
+🙏 *We appreciate your understanding and cooperation.*  
+— *The ${BOT_NAME} Team* 🤖`, {
           parse_mode: "Markdown"
         }).catch(err => console.error('Already pending error:', err));
-
-        notifyAdmin(bot, userId, username, true);
       }
-      return;
     }
 
-    // ✅ Approved User Welcome (Edited)
-    return bot.sendMessage(chatId, `👤 *Welcome, ${fullName}!*
+    // ✅ Approved User Welcome Panel
+    return bot.sendMessage(chatId, `👋 *Welcome ${fullName}!*  
+We’re glad to have you here. Let’s give you the *best experience* possible.
 
-We’re glad to have you on *${BOT_NAME}*.  
-Let’s give you the *best experience* possible.
+✅ Fast & reliable service  
+💎 Premium-quality features  
+🔐 End-to-end privacy  
+🧠 User-friendly interface
 
-🚀 *What you get:*  
-✅ *Fast & reliable service*  
-💎 *Premium-quality features*  
-🔒 *End-to-end data privacy*  
-🧠 *Smart & user-friendly interface*
-
-🟢 *To begin:*  
-➡️ Type */start*
-
-*Thanks for joining — let’s make it simple, fast & premium.* 🧡🤖
-`, {
+👇 Choose an option below to get started:`, {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
