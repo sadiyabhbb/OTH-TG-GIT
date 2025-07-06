@@ -1,21 +1,15 @@
 {
-  "name": "telegram-force-join-bot",
+  "name": "telegram-bot",
   "version": "1.0.0",
-  "description": "A Telegram bot with force join, BIN checker, OTP checker, and admin approval features",
+  "description": "A modular Telegram bot",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "install-deps": "npm install telegraf axios dotenv speakeasy cheerio"
+    "start": "node index.js"
   },
   "dependencies": {
-    "telegraf": "^4.12.2",
-    "axios": "^1.6.8",
+    "axios": "^1.6.0",
     "dotenv": "^16.3.1",
-    "speakeasy": "^2.0.0",
-    "cheerio": "^1.0.0-rc.12"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
+    "node-telegram-bot-api": "^0.61.0",
+    "speakeasy": "^2.0.0"
   }
 }
