@@ -2,12 +2,11 @@ const { ADMIN_UID, ADMIN_USERNAME } = require('../config/botConfig');
 const { loadDB, saveDB } = require('../utils/db');
 
 module.exports = (bot) => {
-  const userDB = loadDB();
-
-  // /approve UID
+  // ⏺️ OnText commands
   bot.onText(/\/approve (\d+)/, (msg, match) => {
     if (msg.from.username !== ADMIN_USERNAME && msg.from.id !== ADMIN_UID) return;
 
+    const userDB = loadDB();
     const uid = parseInt(match[1]);
     if (!userDB.approved.includes(uid)) {
       userDB.approved.push(uid);
@@ -21,29 +20,52 @@ module.exports = (bot) => {
     }
   });
 
-  // /ban UID
   bot.onText(/\/ban (\d+)/, (msg, match) => {
     if (msg.from.username !== ADMIN_USERNAME && msg.from.id !== ADMIN_UID) return;
 
+    const userDB = loadDB();
     const uid = parseInt(match[1]);
-    userDB.banned.push(uid);
-    userDB.approved = userDB.approved.filter(id => id !== uid);
-    userDB.pending = userDB.pending.filter(id => id !== uid);
-    saveDB(userDB);
+    if (!userDB.banned.includes(uid)) {
+      userDB.banned.push(uid);
+      userDB.approved = userDB.approved.filter(id => id !== uid);
+      userDB.pending = userDB.pending.filter(id => id !== uid);
+      saveDB(userDB);
 
-    bot.sendMessage(uid, '🚫 You have been banned by admin.');
-    bot.sendMessage(msg.chat.id, `🚫 Banned UID: \`${uid}\``, { parse_mode: 'Markdown' });
+      bot.sendMessage(uid, '🚫 You have been banned by admin.');
+      bot.sendMessage(msg.chat.id, `🚫 Banned UID: \`${uid}\``, { parse_mode: 'Markdown' });
+    }
   });
 
-  // /remove UID
   bot.onText(/\/remove (\d+)/, (msg, match) => {
     if (msg.from.username !== ADMIN_USERNAME && msg.from.id !== ADMIN_UID) return;
 
+    const userDB = loadDB();
     const uid = parseInt(match[1]);
     userDB.pending = userDB.pending.filter(id => id !== uid);
     userDB.approved = userDB.approved.filter(id => id !== uid);
     saveDB(userDB);
 
     bot.sendMessage(msg.chat.id, `🗑️ Removed UID: \`${uid}\``, { parse_mode: 'Markdown' });
+  });
+};
+
+// ✅ Inline function for "⚙️ Panel" button
+module.exports.runAdminPanelInline = async (bot, chatId) => {
+  await bot.sendMessage(chatId, `⚙️ *Admin Panel*`, {
+    parse_mode: "Markdown",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "🧾 Users", callback_data: "users" }],
+        [
+          { text: "💳 Gen", callback_data: "gen" },
+          { text: "📩 TempMail", callback_data: "tempmail" }
+        ],
+        [
+          { text: "🔐 2FA", callback_data: "2fa" },
+          { text: "🕒 Uptime", callback_data: "uptime" }
+        ],
+        [{ text: "🔙 Back", callback_data: "back_home" }]
+      ]
+    }
   });
 };
