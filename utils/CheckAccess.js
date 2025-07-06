@@ -1,3 +1,4 @@
+// utils/checkAccess.js
 const { loadDB } = require('./db');
 const { ADMIN_UID, ADMIN_USERNAME } = require('../config/botConfig');
 
