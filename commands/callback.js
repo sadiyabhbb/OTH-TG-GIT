@@ -1,4 +1,5 @@
 const { loadDB } = require('../utils/db');
+const { ADMIN_UID, ADMIN_USERNAME } = require('../config/botConfig');
 
 module.exports = (bot) => {
   bot.on('callback_query', async (query) => {
@@ -7,6 +8,10 @@ module.exports = (bot) => {
     const data = query.data;
     const username = query.from.username || "NoUsername";
     const userId = query.from.id;
+    const isAdmin = (
+      username === ADMIN_USERNAME ||
+      userId.toString() === ADMIN_UID.toString()
+    );
 
     try {
       switch (data) {
@@ -15,7 +20,7 @@ module.exports = (bot) => {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
             }
           });
 
@@ -24,7 +29,7 @@ module.exports = (bot) => {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
             }
           });
 
@@ -33,7 +38,7 @@ module.exports = (bot) => {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
             }
           });
 
@@ -52,11 +57,13 @@ module.exports = (bot) => {
             message_id: messageId,
             parse_mode: "Markdown",
             reply_markup: {
-              inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
+              inline_keyboard: [[{ text: '⬅️ Back', callback_data: isAdmin ? 'admin_panel' : 'back' }]]
             }
           });
 
         case 'users':
+          if (!isAdmin) return bot.answerCallbackQuery(query.id, { text: "⛔ Access Denied", show_alert: true });
+
           const db = loadDB();
           const format = (arr) => arr.length ? arr.map(id => `\`${id}\``).join(', ') : '_None_';
           const usersText =
@@ -75,6 +82,8 @@ module.exports = (bot) => {
           });
 
         case 'admin_panel':
+          if (!isAdmin) return bot.answerCallbackQuery(query.id, { text: "⛔ Admin access only", show_alert: true });
+
           return bot.editMessageText(`👑 Admin Panel for @${username}`, {
             chat_id: chatId,
             message_id: messageId,
