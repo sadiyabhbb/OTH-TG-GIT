@@ -1,30 +1,31 @@
-// index.js (Webhook + PORT)
+// index.js (Polling version)
 
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { webHook: true });
-const app = express();
-const port = process.env.PORT || 3000;
-
-// 📍 Set webhook URL
-const url = process.env.RENDER_EXTERNAL_URL || 'https://your-render-url.onrender.com';
-bot.setWebHook(`${url}/bot${process.env.BOT_TOKEN}`);
+// ✅ Create bot with polling enabled
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
+  polling: true,
+  fileDownloadOptions: {
+    headers: {
+      'User-Agent': 'Telegram Bot'
+    }
+  }
+});
 
 // ⏱️ Store bot start time globally
 global.botStartTime = Date.now();
 
-// Load user DB
+// 🗃️ Load user DB and ensure structure
 const { loadDB, saveDB } = require('./utils/db');
 const userDB = loadDB();
 if (!userDB.approved || !userDB.pending || !userDB.banned) {
   saveDB({ approved: [], pending: [], banned: [] });
 }
 
-// 🔁 Load all command modules from commands/
+// 🔁 Dynamically load all commands from commands folder
 const commandsPath = path.join(__dirname, 'commands');
 fs.readdirSync(commandsPath).forEach(file => {
   if (file.endsWith('.js')) {
@@ -35,14 +36,4 @@ fs.readdirSync(commandsPath).forEach(file => {
   }
 });
 
-// 📡 Express endpoint to receive webhook updates
-app.use(express.json());
-app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
-
-// 🚀 Start server
-app.listen(port, () => {
-  console.log(`✅ Bot server running on port ${port}`);
-});
+console.log("✅ Bot is running in polling mode...");
