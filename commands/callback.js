@@ -1,35 +1,39 @@
+const genCommand = require('./gen');
+const tempmailCommand = require('./checkemail');
+const twofaCommand = require('./twofa');
+const uptimeCommand = require('./uptime');
+const usersCommand = require('./users');
+const adminCommand = require('./admin');
+
 module.exports = (bot) => {
   bot.on('callback_query', async (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
-    const messageId = query.message.message_id; // ✅ Fix applied
 
-    // ✅ Always answer callback to stop loading spinner
-    await bot.answerCallbackQuery(query.id).catch(console.error);
+    // Prevent Telegram's loading spinner
+    await bot.answerCallbackQuery(query.id);
 
     switch (data) {
       case 'gen':
-        return bot.sendMessage(chatId, '💳 Use `/gen 515462` to generate cards.', {
-          parse_mode: "Markdown"
-        });
+        return genCommand(bot, query.message);
 
       case 'tempmail':
-        return bot.sendMessage(chatId, '📩 Use `.tempmail` to get OTP inbox.');
+        return tempmailCommand(bot, query.message);
 
       case '2fa':
-        return bot.sendMessage(chatId, '🔐 Use `.2fa email@example.com` to get OTP.');
+        return twofaCommand(bot, query.message);
 
       case 'uptime':
-        return bot.sendMessage(chatId, '🕒 Bot is up and running!');
+        return uptimeCommand(bot, query.message);
 
       case 'users':
-        return bot.sendMessage(chatId, '👥 Admin user stats coming soon...');
+        return usersCommand(bot, query.message);
 
       case 'admin_panel':
-        return bot.sendMessage(chatId, '⚙️ Admin panel is under development.');
+        return adminCommand(bot, query.message);
 
       default:
-        return bot.sendMessage(chatId, '❓ Unknown command.');
+        return bot.sendMessage(chatId, '⚠️ Unknown command!');
     }
   });
 };
