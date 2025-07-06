@@ -1,4 +1,5 @@
 const os = require('os');
+const { ADMIN_USERNAME } = require('../config/botConfig');
 
 module.exports = (bot) => {
   bot.on('callback_query', async (query) => {
@@ -6,28 +7,8 @@ module.exports = (bot) => {
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
 
+    // ✅ Always answer callback to avoid loading animation
     await bot.answerCallbackQuery(query.id);
-
-    const mainMenu = {
-      chat_id: chatId,
-      message_id: messageId,
-      text: `🎉 Welcome! Use the buttons below:`,
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🧾 Users", callback_data: "users" }],
-          [{ text: "⚙️ Panel", callback_data: "admin_panel" }],
-          [
-            { text: "💳 Gen", callback_data: "gen" },
-            { text: "📩 TempMail", callback_data: "tempmail" }
-          ],
-          [
-            { text: "🔐 2FA", callback_data: "2fa" },
-            { text: "🕒 Uptime", callback_data: "uptime" }
-          ]
-        ]
-      },
-      parse_mode: "Markdown"
-    };
 
     switch (data) {
       case 'gen':
@@ -36,20 +17,17 @@ module.exports = (bot) => {
           message_id: messageId,
           parse_mode: "Markdown",
           reply_markup: {
-            inline_keyboard: [
-              [{ text: '⬅️ Back', callback_data: 'back' }]
-            ]
+            inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
           }
         });
 
       case 'tempmail':
-        return bot.editMessageText('📩 Use `.tempmail` to get a temp email inbox.', {
+        return bot.editMessageText('📩 Use `.tempmail example@email.com` to get OTP.', {
           chat_id: chatId,
           message_id: messageId,
+          parse_mode: "Markdown",
           reply_markup: {
-            inline_keyboard: [
-              [{ text: '⬅️ Back', callback_data: 'back' }]
-            ]
+            inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
           }
         });
 
@@ -57,41 +35,36 @@ module.exports = (bot) => {
         return bot.editMessageText('🔐 Use `.2fa email@example.com` to get OTP.', {
           chat_id: chatId,
           message_id: messageId,
+          parse_mode: "Markdown",
           reply_markup: {
-            inline_keyboard: [
-              [{ text: '⬅️ Back', callback_data: 'back' }]
-            ]
+            inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
           }
         });
 
       case 'uptime':
-        const uptimeSec = os.uptime();
-        const hours = Math.floor(uptimeSec / 3600);
-        const minutes = Math.floor((uptimeSec % 3600) / 60);
-        const seconds = uptimeSec % 60;
+        const totalSeconds = Math.floor(os.uptime());
+        const days = Math.floor(totalSeconds / (3600 * 24));
+        const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
 
-        return bot.editMessageText(
-          `🕒 Bot Uptime:\n\`${hours}h ${minutes}m ${seconds}s\``,
-          {
-            chat_id: chatId,
-            message_id: messageId,
-            parse_mode: "Markdown",
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: '⬅️ Back', callback_data: 'back' }]
-              ]
-            }
+        const uptimeStr = `🕒 Bot Uptime:\n\`${days}d ${hours}h ${minutes}m ${seconds}s\``;
+
+        return bot.editMessageText(uptimeStr, {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
           }
-        );
+        });
 
       case 'users':
         return bot.editMessageText('👥 Admin user stats coming soon...', {
           chat_id: chatId,
           message_id: messageId,
           reply_markup: {
-            inline_keyboard: [
-              [{ text: '⬅️ Back', callback_data: 'back' }]
-            ]
+            inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
           }
         });
 
@@ -100,25 +73,32 @@ module.exports = (bot) => {
           chat_id: chatId,
           message_id: messageId,
           reply_markup: {
-            inline_keyboard: [
-              [{ text: '⬅️ Back', callback_data: 'back' }]
-            ]
+            inline_keyboard: [[{ text: '⬅️ Back', callback_data: 'back' }]]
           }
         });
 
       case 'back':
-        return bot.editMessageText(mainMenu.text, {
+        return bot.editMessageText(`👑 Welcome Admin @${ADMIN_USERNAME}!`, {
           chat_id: chatId,
           message_id: messageId,
-          reply_markup: mainMenu.reply_markup,
-          parse_mode: mainMenu.parse_mode
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "🧾 Users", callback_data: "users" }],
+              [{ text: "⚙️ Panel", callback_data: "admin_panel" }],
+              [
+                { text: "💳 Gen", callback_data: "gen" },
+                { text: "📩 TempMail", callback_data: "tempmail" }
+              ],
+              [
+                { text: "🔐 2FA", callback_data: "2fa" },
+                { text: "🕒 Uptime", callback_data: "uptime" }
+              ]
+            ]
+          }
         });
 
       default:
-        return bot.editMessageText('❌ Unknown action.', {
-          chat_id: chatId,
-          message_id: messageId
-        });
+        return bot.sendMessage(chatId, "❓ Unknown option.");
     }
   });
 };
