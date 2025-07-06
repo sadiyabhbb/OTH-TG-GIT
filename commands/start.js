@@ -9,11 +9,11 @@ module.exports = (bot) => {
     const username = msg.from.username || 'NoUsername';
 
     const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-    const isAdmin = uid === Number(ADMIN_UID); // Ensure same type
+    const isAdmin = uid === Number(ADMIN_UID);
 
-    const adminWelcome = 
+    const adminWelcome =
 `👑 *Welcome, Admin!*
-You've entered the premium control panel of *PremiumBot*.
+You've entered the premium control panel of *PremiumBot*\\.
 
 🔧 *Your access includes:*
 📊 Monitor user activity  
@@ -21,16 +21,16 @@ You've entered the premium control panel of *PremiumBot*.
 ⚙️ Configure features \\& limits  
 📈 Track system stats
 
-🛡 *Use commands responsibly to ensure smooth performance.*
+🛡 *Use commands responsibly to ensure smooth performance\\.*
 
 Need support?  
-💬 Type */adminhelp* or contact the developer.`;
+💬 Type */adminhelp* or contact the developer\\.`;
 
-    const userWelcome = 
+    const userWelcome =
 `👤 *Welcome, ${cleanUsername}!*
 
-We're glad to have you on *PremiumBot*.
-Let's give you the *best experience possible*.
+We're glad to have you on *PremiumBot*\\.
+Let's give you the *best experience possible*\\.
 
 🚀 *What you get:*  
 ✅ Fast \\& reliable service  
@@ -41,20 +41,17 @@ Let's give you the *best experience possible*.
 🟢 *To begin:*  
 ➡️ Type */start*
 
-Thanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
+Thanks for joining — let's make it simple, fast \\& premium\\. 🧡🤖`;
 
-    // Always load fresh userDB
     const userDB = loadDB();
     const isApproved = userDB.approved.includes(uid);
     const isBanned = userDB.banned.includes(uid);
     const isPending = userDB.pending.includes(uid);
 
-    // ❌ If banned
     if (isBanned) {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
     }
 
-    // ✅ If admin or approved
     if (isAdmin || isApproved) {
       const message = isAdmin ? adminWelcome : userWelcome;
       const buttons = isAdmin
@@ -86,13 +83,15 @@ Thanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
       });
     }
 
-    // ⏳ If not approved, mark as pending
+    // Not approved yet
     if (!isPending) {
       userDB.pending.push(uid);
       saveDB(userDB);
     }
 
-    bot.sendMessage(chatId, `⏳ Your access is pending approval by @${ADMIN_USERNAME}.\nPlease wait...`);
+    const pendingMsg = `⏳ Your access is pending approval by @${ADMIN_USERNAME.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}\\.\\nPlease wait\\.\\.\\.`;
+
+    bot.sendMessage(chatId, pendingMsg, { parse_mode: 'MarkdownV2' });
     notifyAdmin(bot, uid, username, isPending);
   });
 };
