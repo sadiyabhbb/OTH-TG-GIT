@@ -14,17 +14,7 @@ module.exports = (bot) => {
     return `⏱️ *Bot Uptime:*\n${days}d ${hours}h ${minutes}m ${seconds}s`;
   }
 
-  // /up or up command
-  bot.onText(/^\/?up$/, (msg) => {
-    const chatId = msg.chat.id;
-    const uptimeText = getFormattedUptime();
-
-    bot.sendMessage(chatId, uptimeText, {
-      parse_mode: "Markdown"
-    });
-  });
-
-  // Uptime button via callback
+  // ✅ Only handle uptime via inline button (callback)
   bot.on('callback_query', (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
