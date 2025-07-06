@@ -7,12 +7,7 @@ const loadDB = () => {
   try {
     return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
   } catch {
-    return {
-      users: [],
-      pending: [],
-      approved: [],
-      banned: [],
-    };
+    return { users: [], pending: [], approved: [], banned: [] };
   }
 };
 
@@ -21,34 +16,26 @@ const saveDB = (data) => {
 };
 
 module.exports = (bot, config) => {
-  // ✅ /start command
   bot.onText(/^\/start$/, (msg) => {
+    console.log(`[START] called by ${msg.from.username} (${msg.from.id})`);
+
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const username = msg.from.username || 'NoUsername';
     const fullName = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ');
 
     const userDB = loadDB();
-
-    const isAdmin =
-      userId.toString() === config.ADMIN_UID ||
-      (username && username.toLowerCase() === config.ADMIN_USERNAME?.toLowerCase());
-
+    const isAdmin = userId.toString() === config.ADMIN_UID || (username?.toLowerCase() === config.ADMIN_USERNAME?.toLowerCase());
     const isApproved = userDB.approved.includes(userId);
     const isPending = userDB.pending.includes(userId);
     const isBanned = userDB.banned.includes(userId);
 
-    // Add to user list
-    if (!userDB.users.includes(userId)) {
-      userDB.users.push(userId);
-    }
+    if (!userDB.users.includes(userId)) userDB.users.push(userId);
 
-    // ❌ Banned user
     if (isBanned) {
       return bot.sendMessage(chatId, '🚫 আপনি এই বট ব্যবহার করতে নিষিদ্ধ!');
     }
 
-    // 👑 Admin panel
     if (isAdmin) {
       return bot.sendMessage(chatId, `👑 Admin Panel for @${username}`, {
         reply_markup: {
@@ -67,7 +54,6 @@ module.exports = (bot, config) => {
       });
     }
 
-    // ✅ Approved user
     if (isApproved) {
       return bot.sendMessage(chatId, `👋 স্বাগতম ${fullName}!`, {
         reply_markup: {
@@ -85,14 +71,13 @@ module.exports = (bot, config) => {
       });
     }
 
-    // ⏳ Pending user
     if (!isPending) {
       userDB.pending.push(userId);
       saveDB(userDB);
 
       bot.sendMessage(chatId, '📩 অনুরোধ পাঠানো হয়েছে! অনুগ্রহ করে অ্যাডমিনের অনুমতি অপেক্ষা করুন।');
 
-      bot.sendMessage(config.ADMIN_UID, `🆕 *নতুন অ্যাক্সেস অনুরোধ*\n\n` +
+      return bot.sendMessage(config.ADMIN_UID, `🆕 *নতুন অ্যাক্সেস অনুরোধ*\n\n` +
         `👤 নাম: ${fullName}\n` +
         `🔗 ইউজারনেম: @${username}\n` +
         `🆔 UID: \`${userId}\``, {
@@ -106,8 +91,6 @@ module.exports = (bot, config) => {
           ]
         }
       });
-
-      return;
     } else {
       bot.sendMessage(chatId, '⏳ আপনার অনুরোধ প্রক্রিয়াধীন রয়েছে...');
     }
