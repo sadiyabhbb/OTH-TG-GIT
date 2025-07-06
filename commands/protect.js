@@ -1,5 +1,3 @@
-// commands/protect.js
-
 const checkAccess = require('../utils/checkAccess');
 
 module.exports = (bot) => {
