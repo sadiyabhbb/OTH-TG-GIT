@@ -1,21 +1,24 @@
+const { ADMIN_UID, ADMIN_USERNAME } = require('../config/botConfig');
 const { loadDB, saveDB } = require('../utils/db');
-const { ADMIN_USERNAME } = require('../config/botConfig');
 const notifyAdmin = require('../utils/notifyAdmin');
 
 module.exports = (bot) => {
-  bot.onText(/\/start/, async (msg) => {
+  bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
     const uid = msg.from.id;
     const username = msg.from.username || 'NoUsername';
-    const chatId = msg.chat.id;
+    const userDB = loadDB();
 
-    const db = loadDB();
+    const isApproved = userDB.approved.includes(uid);
+    const isBanned = userDB.banned.includes(uid);
+    const isPending = userDB.pending.includes(uid);
 
-    if (db.banned.includes(uid)) {
+    if (isBanned) {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
     }
 
-    if (db.approved.includes(uid)) {
-      return bot.sendMessage(chatId, `🎉 Welcome back @${username}!\n\nUse the inline buttons below:`, {
+    if (isApproved) {
+      return bot.sendMessage(chatId, `🎉 Welcome @${username}!\nUse the buttons below:`, {
         reply_markup: {
           inline_keyboard: [
             [
@@ -31,19 +34,14 @@ module.exports = (bot) => {
       });
     }
 
-    if (!db.pending.includes(uid)) {
-      db.pending.push(uid);
-      saveDB(db);
-      notifyAdmin(bot, uid, username, false);
-    } else {
-      notifyAdmin(bot, uid, username, true);
+    // ⏳ If not approved, add to pending (if not already)
+    if (!isPending) {
+      userDB.pending.push(uid);
+      saveDB(userDB);
     }
 
-    bot.sendMessage(chatId,
-      `👋 হ্যালো @${username}!\n\n` +
-      `আপনার এক্সেস এখনও অনুমোদিত হয়নি।\n` +
-      `অনুগ্রহ করে অনুমোদনের জন্য অপেক্ষা করুন অথবা যোগাযোগ করুন @${ADMIN_USERNAME} এর সাথে।\n\n` +
-      `📩 স্টেটাস: Pending Approval`
-    );
+    bot.sendMessage(chatId, `⏳ Your access is pending approval by @${ADMIN_USERNAME}.\nPlease wait...`);
+
+    notifyAdmin(bot, uid, username, isPending); // Notify admin only if new or re-pending
   });
 };
