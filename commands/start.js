@@ -1,72 +1,76 @@
-const { ADMIN_UID, ADMIN_USERNAME } = require('../config/botConfig');
-const notifyAdmin = require('../utils/notifyAdmin');
-const { loadDB, saveDB } = require('../utils/db');
-const checkAccess = require('../utils/checkAccess');
-
-module.exports = (bot) => {
-
-  // Handle all non-command messages first
-  bot.on('message', (ctx) => {
-    const msg = ctx.update.message;
-    if (!msg.text || msg.text.startsWith('/')) return;
-    
-    const userId = msg.from.id;
-    const username = msg.from.username || 'NoUsername';
-    const { isAdmin, isApproved } = checkAccess(userId, username);
-
-    if (!isAdmin && !isApproved) {
-      const deniedMsg = `⛔ *Access Denied*\n\nPlease send /start to request access`;
-      return bot.sendMessage(msg.chat.id, deniedMsg, { parse_mode: "Markdown" });
-    }
-  });
-
-  // Handle /start command separately
-  bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    const username = msg.from.username || 'NoUsername';
-    const fullName = `${msg.from.first_name || ''} ${msg.from.last_name || ''}`.trim();
-    const BOT_NAME = process.env.BOT_NAME || "MyBot";
-
-    const userDB = loadDB();
-    const { isAdmin, isApproved } = checkAccess(userId, username);
-
-    // Add new users to database
-    if (!userDB.users.includes(userId)) {
-      userDB.users.push(userId);
-      saveDB(userDB);
-    }
-
-    // Banned user check
-    if (userDB.banned.includes(userId)) {
-      return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
-    }
-
-    // Admin welcome message
-    if (isAdmin) {
-      return bot.sendMessage(chatId,
-        `👑 *Welcome Admin ${fullName}!*\n\nYour admin controls are ready.`,
-        { parse_mode: "Markdown" }
-      );
-    }
-
-    // Approved user welcome
-    if (isApproved) {
-      return bot.sendMessage(chatId,
-        `👋 Welcome ${fullName}!\n\nYour premium access is active.`,
-        { parse_mode: "Markdown" }
-      );
-    }
-
-    // New user request
-    if (!userDB.pending.includes(userId)) {
-      userDB.pending.push(userId);
-      saveDB(userDB);
-      notifyAdmin(bot, userId, username);
-    }
-
-    // Default access denied message
-    const accessMsg = `⛔ *Access Restricted*\n\nHello ${fullName}, please contact @${ADMIN_USERNAME} for access.`;
-    return bot.sendMessage(chatId, accessMsg, { parse_mode: "Markdown" });
-  });
-};
+   const { Telegraf } = require('telegraf');
+   const { ADMIN_UID, ADMIN_USERNAME } = require('./config/botConfig');
+   const { loadDB, saveDB } = require('./utils/db');
+   
+   const bot = new Telegraf(process.env.BOT_TOKEN);
+   
+   // ডাটাবেস ইন্সট্যান্স
+   let userDB = loadDB();
+   
+   // মিডলওয়্যার
+   bot.use(async (ctx, next) => {
+     const userId = ctx.from.id;
+     const username = ctx.from.username || 'NoUsername';
+     
+     // নতুন ইউজার হলে ডাটাবেসে অ্যাড
+     if (!userDB.users.includes(userId)) {
+       userDB.users.push(userId);
+       saveDB(userDB);
+     }
+     
+     await next();
+   });
+   
+   // সকল মেসেজ হ্যান্ডলার
+   bot.on('message', async (ctx) => {
+     const userId = ctx.from.id;
+     const chatId = ctx.chat.id;
+     const messageText = ctx.message.text;
+     const username = ctx.from.username || 'NoUsername';
+     const fullName = `${ctx.from.first_name || ''} ${ctx.from.last_name || ''}`.trim();
+     
+     // ADMIN চেক
+     const isAdmin = username.toLowerCase() === ADMIN_USERNAME.toLowerCase() || 
+                     userId.toString() === ADMIN_UID.toString();
+     
+     // APPROVED চেক
+     const isApproved = userDB.approved.includes(userId);
+     
+     // BANNED চেক
+     if (userDB.banned.includes(userId)) {
+       return await ctx.reply('🚫 You are banned from using this bot!');
+     }
+     
+     // START কমান্ড হ্যান্ডেল
+     if (messageText === '/start') {
+       if (isAdmin) {
+         return await ctx.replyWithMarkdown(`👑 *Welcome Admin ${fullName}!*`);
+       }
+       
+       if (isApproved) {
+         return await ctx.replyWithMarkdown(`👋 *Welcome ${fullName}!*`);
+       }
+       
+       if (!userDB.pending.includes(userId)) {
+         userDB.pending.push(userId);
+         saveDB(userDB);
+       }
+       
+       return await ctx.replyWithMarkdown(
+         `⛔ *Access Restricted*\n\nPlease contact @${ADMIN_USERNAME} for access.`
+       );
+     }
+     
+     // অন্যান্য সব মেসেজের জন্য
+     if (!isAdmin && !isApproved) {
+       return await ctx.replyWithMarkdown(
+         `⚠️ *Access Denied*\n\nSend /start to request access.`
+       );
+     }
+     
+     await next();
+   });
+   
+   // বট স্টার্ট
+   bot.launch();
+   
