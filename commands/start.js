@@ -43,9 +43,9 @@ function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
 You've entered the premium control panel of *PremiumBot*.
 
 🔧 *Your access includes:*
-📊 Monitor user activity
-🧑‍💻 Manage users & roles
-⚙️ Configure features & limits
+📊 Monitor user activity  
+🧑‍💻 Manage users & roles  
+⚙️ Configure features & limits  
 📈 Track system stats
 
 🛡 *Use commands responsibly to ensure smooth performance.*
@@ -107,25 +107,28 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
     }
   }
 
-  // ⏳ Not approved user → show pretty message & notify admin
+  // ⏳ Not approved user → show styled message & notify admin
   const restrictedMsg =
 `🚫 *Access Restricted*
 
-👋 Hello!
-Thank you for your interest in using *PremiumBot*.
+👋 *Hello, ${cleanUsername}!*
+Thanks for your interest in using *PremiumBot*.
 
-To ensure a secure and high-quality experience, access is limited to *authorized users only*.
+🔐 *Access is limited to authorized users only.*
+This ensures a secure, premium-quality experience for everyone.
 
-🆔 *Your Telegram User ID:* \`${uid}\`  
-📮 *Please contact the administrator to request access:*  
-@${ADMIN_USERNAME}
+📮 *To request access:*  
+Message [@${ADMIN_USERNAME}](https://t.me/${ADMIN_USERNAME}) with your Telegram details.
 
-Upon approval, you will gain full access to:
-✨ *Premium features*  
-🚀 *Fast and reliable service*  
-🔐 *Data privacy and security*
+🆔 *Your Telegram ID:* \`${uid}\`  
+🔗 *Username:* @${username || 'NoUsername'}
 
-🙏 We appreciate your understanding and cooperation.  
+📢 Once approved, you'll enjoy:  
+✨ Full premium features  
+🚀 Fast & secure service  
+🧠 Easy-to-use interface
+
+🙏 We appreciate your patience and understanding.  
 — *The PremiumBot Team 🤖*`;
 
   bot.sendMessage(chatId, restrictedMsg, { parse_mode: 'Markdown' });
