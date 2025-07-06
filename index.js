@@ -2,6 +2,9 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const http = require('http');
 
+// ✅ Bot start time (used for real uptime)
+global.botStartTime = Date.now();
+
 // Load token from .env
 const token = process.env.BOT_TOKEN;
 
@@ -24,8 +27,8 @@ require('./commands/chk')(bot);
 require('./commands/mass')(bot);
 require('./commands/twofa')(bot);
 require('./commands/checkemail')(bot);
-require('./commands/uptime')(bot);
-require('./commands/callback')(bot); // ✅ Added callback button handler
+require('./commands/uptime')(bot); // Optional if you have a separate command
+require('./commands/callback')(bot); // ✅ Callback handler added
 
 // 🌐 Render keep-alive HTTP server
 http.createServer((req, res) => {
