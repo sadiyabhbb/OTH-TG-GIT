@@ -3,12 +3,12 @@ const { loadDB, saveDB } = require('../utils/db');
 const notifyAdmin = require('../utils/notifyAdmin');
 
 module.exports = (bot) => {
-  // /start command
+  // 🟢 /start command
   bot.onText(/\/start/, (msg) => {
     handleStart(bot, msg.chat.id, msg.from);
   });
 
-  // back button handler
+  // 🔁 Back button handler
   bot.on('callback_query', (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
@@ -20,6 +20,7 @@ module.exports = (bot) => {
   });
 };
 
+// 🧠 Main start handler function
 function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const uid = from.id;
   const username = from.username || 'NoUsername';
@@ -31,12 +32,12 @@ function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const isBanned = userDB.banned.includes(uid);
   const isPending = userDB.pending.includes(uid);
 
-  // If banned
+  // ❌ If banned
   if (isBanned) {
     return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
   }
 
-  // If approved or admin
+  // ✅ Approved or Admin
   if (isAdmin || isApproved) {
     const message = isAdmin
       ? `👑 *Welcome, Admin!*
@@ -107,16 +108,17 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
     }
   }
 
-  // If pending/new user
+  // 🕒 If not approved, mark as pending (once)
   if (!isPending) {
     userDB.pending.push(uid);
     saveDB(userDB);
   }
 
+  // 🔒 Fancy Access Restricted message
   const pendingMsg =
 `🚫 *Access Restricted*
 
-👋 Hello!
+👋 *Hello!*
 Thank you for your interest in using *PremiumBot*.
 
 To ensure a secure and high-quality experience, access is limited to *authorized users only*.
