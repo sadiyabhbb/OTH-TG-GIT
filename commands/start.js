@@ -23,8 +23,8 @@ module.exports = (bot) => {
     // 👑 Admin বা ✅ Approved হলে
     if (isAdmin || isApproved) {
       const message = isAdmin
-        ? `👑 *Welcome, Admin!*\nYou've entered the premium control panel of *PremiumBot*.\n\n🔧 *Your access includes:*\n📊 Monitor user activity\n🧑‍💻 Manage users \\& roles\n⚙️ Configure features \\& limits\n📈 Track system stats\n\n🛡 *Use commands responsibly to ensure smooth performance.*\n\nNeed support?\n💬 Type */adminhelp* or contact the developer.`
-        : `👤 *Welcome, ${cleanUsername}!*\n\nWe're glad to have you on *PremiumBot*.\nLet's give you the *best experience possible*.\n\n🚀 *What you get:*\n✅ Fast \\& reliable service\n💎 Premium\\-quality features\n🔒 End\\-to\\-end data privacy\n🧠 Smart \\& user\\-friendly interface\n\n🟢 *To begin:*\n➡️ Type */start*\n\nThanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
+        ? `👑 *Welcome, Admin!*\nYou've entered the premium control panel of *PremiumBot*.\n\n🔧 *Your access includes:*\n📊 Monitor user activity\n🧑‍💻 Manage users \\& roles\n⚙️ Configure features \\& limits\n📈 Track system stats\n\n🛡 *Use commands responsibly to ensure smooth performance.*\n\nNeed support?\n💬 Type /adminhelp or contact the developer.`
+        : `👤 *Welcome, ${cleanUsername}!*\n\nWe're glad to have you on *PremiumBot*.\nLet's give you the *best experience possible*.\n\n🚀 *What you get:*\n✅ Fast & reliable service\n💎 Premium-quality features\n🔒 End-to-end data privacy\n🧠 Smart & user-friendly interface\n\n🟢 *To begin:*\n➡️ Type /start\n\nThanks for joining — let's make it simple, fast & premium. 🧡🤖`;
 
       const buttons = isAdmin
         ? [
@@ -50,14 +50,14 @@ module.exports = (bot) => {
           ];
 
       return bot.sendMessage(chatId, message, {
-        parse_mode: 'MarkdownV2',
+        parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: buttons
         }
       });
     }
 
-    // ⏳ Pending user হলে admin কে notify করো
+    // ⏳ Pending user হলে
     if (!isPending) {
       userDB.pending.push(uid);
       saveDB(userDB);
