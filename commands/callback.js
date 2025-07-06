@@ -10,10 +10,11 @@ module.exports = (bot) => {
     const userId = query.from.id;
 
     const db = loadDB();
-    const isAdmin =
-      username?.toLowerCase() === ADMIN_USERNAME?.toLowerCase() ||
-      userId.toString() === ADMIN_UID.toString();
-    const isApproved = db.approved.includes(userId);
+    const isAdmin = (
+      (username?.toLowerCase() === ADMIN_USERNAME?.toLowerCase()) ||
+      (userId.toString() === ADMIN_UID.toString())
+    );
+    const isApproved = db.approved.map(id => id.toString()).includes(userId.toString());
 
     try {
       switch (data) {
@@ -151,7 +152,7 @@ module.exports = (bot) => {
             });
           } else {
             return bot.answerCallbackQuery(query.id, {
-              text: "⛔ Admin access only",
+              text: "⛔ Access denied.",
               show_alert: true
             });
           }
