@@ -3,12 +3,12 @@ const { loadDB, saveDB } = require('../utils/db');
 const notifyAdmin = require('../utils/notifyAdmin');
 
 module.exports = (bot) => {
-  // 🟢 /start Command
+  // /start command
   bot.onText(/\/start/, (msg) => {
     handleStart(bot, msg.chat.id, msg.from);
   });
 
-  // 🔁 Callback query handler for "back"
+  // back button handler
   bot.on('callback_query', (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
@@ -20,7 +20,6 @@ module.exports = (bot) => {
   });
 };
 
-// 🧠 Central Start Handler Function
 function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const uid = from.id;
   const username = from.username || 'NoUsername';
@@ -32,8 +31,15 @@ function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const isBanned = userDB.banned.includes(uid);
   const isPending = userDB.pending.includes(uid);
 
-  const adminWelcome =
-`👑 *Welcome, Admin!*
+  // If banned
+  if (isBanned) {
+    return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
+  }
+
+  // If approved or admin
+  if (isAdmin || isApproved) {
+    const message = isAdmin
+      ? `👑 *Welcome, Admin!*
 You've entered the premium control panel of *PremiumBot*.
 
 🔧 *Your access includes:*
@@ -45,10 +51,8 @@ You've entered the premium control panel of *PremiumBot*.
 🛡 *Use commands responsibly to ensure smooth performance.*
 
 Need support?  
-💬 Type /adminhelp or contact the developer.`;
-
-  const userWelcome =
-`👤 *Welcome, ${cleanUsername}!*
+💬 Type /adminhelp or contact the developer.`
+      : `👤 *Welcome, ${cleanUsername}!*
 
 We're glad to have you on *PremiumBot*.
 Let's give you the *best experience possible*.
@@ -64,14 +68,6 @@ Let's give you the *best experience possible*.
 
 Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
 
-  // ❌ If banned
-  if (isBanned) {
-    return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
-  }
-
-  // ✅ If Admin or Approved
-  if (isAdmin || isApproved) {
-    const message = isAdmin ? adminWelcome : userWelcome;
     const buttons = isAdmin
       ? [
           [{ text: "📄 Users", callback_data: "users" }],
@@ -95,33 +91,48 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
           ]
         ];
 
-    // 🟨 Always include Back button when message is edited
     if (callbackId && messageId) {
       bot.answerCallbackQuery(callbackId);
       return bot.editMessageText(message, {
         chat_id: chatId,
         message_id: messageId,
         parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [...buttons, [{ text: "🔙 Back", callback_data: "back" }]]
-        }
+        reply_markup: { inline_keyboard: buttons }
+      });
+    } else {
+      return bot.sendMessage(chatId, message, {
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: buttons }
       });
     }
-
-    return bot.sendMessage(chatId, message, {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: buttons
-      }
-    });
   }
 
-  // ⏳ If not approved, mark as pending
+  // If pending/new user
   if (!isPending) {
     userDB.pending.push(uid);
     saveDB(userDB);
   }
 
-  bot.sendMessage(chatId, `⏳ Your access is pending approval by @${ADMIN_USERNAME}.\nPlease wait...`);
+  const pendingMsg =
+`🚫 *Access Restricted*
+
+👋 Hello!
+Thank you for your interest in using *PremiumBot*.
+
+To ensure a secure and high-quality experience, access is limited to *authorized users only*.
+
+🆔 *Your Telegram User ID:* \`${uid}\`  
+📮 *Please contact the administrator to request access:*  
+@${ADMIN_USERNAME}
+
+Upon approval, you will gain full access to:
+✨ *Premium features*  
+🚀 *Fast and reliable service*  
+🔐 *Data privacy and security*
+
+🙏 We appreciate your understanding and cooperation.  
+— *The PremiumBot Team 🤖*`;
+
+  bot.sendMessage(chatId, pendingMsg, { parse_mode: 'Markdown' });
   notifyAdmin(bot, uid, username, isPending);
 }
