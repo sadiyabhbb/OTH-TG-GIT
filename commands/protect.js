@@ -11,8 +11,9 @@ module.exports = (bot) => {
 
     const { isAdmin, isApproved } = checkAccess(userId, username);
 
+    // যদি approve না থাকে বা admin না হয় = Block everything
     if (!isAdmin && !isApproved) {
-      const accessMsg =
+      const accessMsg = 
 `⛔ *Access Restricted*
 
 👋 *Hello ${fullName}!*
