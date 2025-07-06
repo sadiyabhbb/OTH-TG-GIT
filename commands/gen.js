@@ -3,12 +3,12 @@ const { loadDB } = require('../utils/db');
 const { generateValidCard, getBinInfo, createCCMessage } = require('../utils/cardUtils');
 
 module.exports = (bot) => {
-  const userDB = loadDB();
-
   // 🔹 Traditional /gen command
   bot.onText(/\/gen (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+
+    const userDB = loadDB(); // ✅ always fresh
 
     if (userId !== ADMIN_UID && !userDB.approved.includes(userId)) {
       return bot.sendMessage(chatId, `⛔ You are not approved to use this bot.\nAsk @${ADMIN_USERNAME} for access.`);
