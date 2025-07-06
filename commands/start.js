@@ -82,7 +82,7 @@ You’ve entered the *premium control panel* of *${BOT_NAME}*.
       return;
     }
 
-    // ✅ Approved User Welcome
+    // ✅ Approved User Welcome (Edited)
     return bot.sendMessage(chatId, `👤 *Welcome, ${fullName}!*
 
 We’re glad to have you on *${BOT_NAME}*.  
@@ -95,8 +95,7 @@ Let’s give you the *best experience* possible.
 🧠 *Smart & user-friendly interface*
 
 🟢 *To begin:*  
-➡️ Type */start*  
-📘 For commands, type */help*
+➡️ Type */start*
 
 *Thanks for joining — let’s make it simple, fast & premium.* 🧡🤖
 `, {
