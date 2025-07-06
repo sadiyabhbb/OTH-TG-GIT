@@ -7,7 +7,11 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const uid = msg.from.id;
     const username = msg.from.username || 'NoUsername';
+
     const userDB = loadDB();
+
+    const isAdmin =
+      uid === ADMIN_UID || (username && username.toLowerCase() === ADMIN_USERNAME.toLowerCase());
 
     const isApproved = userDB.approved.includes(uid);
     const isBanned = userDB.banned.includes(uid);
@@ -17,7 +21,8 @@ module.exports = (bot) => {
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
     }
 
-    if (isApproved) {
+    // ✅ Admin gets direct access
+    if (isAdmin || isApproved) {
       return bot.sendMessage(chatId, `🎉 Welcome @${username}!\nUse the buttons below:`, {
         reply_markup: {
           inline_keyboard: [
@@ -34,14 +39,15 @@ module.exports = (bot) => {
       });
     }
 
-    // ⏳ If not approved, add to pending (if not already)
+    // ⏳ If not approved and not admin, add to pending
     if (!isPending) {
       userDB.pending.push(uid);
       saveDB(userDB);
+      notifyAdmin(bot, uid, username, false); // Only notify if newly pending
+    } else {
+      notifyAdmin(bot, uid, username, true); // Repeated pending
     }
 
     bot.sendMessage(chatId, `⏳ Your access is pending approval by @${ADMIN_USERNAME}.\nPlease wait...`);
-
-    notifyAdmin(bot, uid, username, isPending); // Notify admin only if new or re-pending
   });
 };
