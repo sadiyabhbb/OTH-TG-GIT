@@ -25,19 +25,7 @@ module.exports = (bot) => {
 
     // 👑 Admin Welcome
     if (isAdmin) {
-      return bot.sendMessage(chatId, `👑 *Welcome, Admin!*
-You’ve entered the premium control panel of *${BOT_NAME}*.
-
-🔧 *Your access includes:*
-📊 Monitor user activity  
-🧑‍💻 Manage users & roles  
-⚙️ Configure features & limits  
-📈 Track system stats
-
-🛡 Use commands responsibly to ensure smooth performance.
-
-Need support?  
-💬 Type */adminhelp* or contact the developer.`, {
+      return bot.sendMessage(chatId, `👑 *Welcome, Admin!* ...`, {
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
@@ -65,37 +53,13 @@ Need support?
         notifyAdmin(bot, userId, username, true);
       }
 
-      return bot.sendMessage(chatId, `⛔ *Access Restricted*
-
-👋 *Hello ${fullName}!*
-Thank you for your interest in using *${BOT_NAME}*.
-
-To ensure a secure and high-quality experience, access is limited to *authorized users only*.
-
-🆔 *Your Telegram User ID:* \`${userId}\`  
-📬 *Please contact the administrator to request access:* @${ADMIN_USERNAME}
-
-Upon approval, you will gain full access to:  
-✨ *Premium features*  
-🚀 *Fast and reliable service*  
-📥 *Data privacy and security*
-
-🙏 We appreciate your understanding and cooperation.  
-– *The ${BOT_NAME} Team* 🤖`, {
+      return bot.sendMessage(chatId, `⛔ *Access Restricted* ...`, {
         parse_mode: "Markdown"
       }).catch(err => console.error('Pending request error:', err));
     }
 
     // ✅ Approved user welcome
-    return bot.sendMessage(chatId, `👋 *Welcome ${fullName}!*
-We’re glad to have you here. Let’s give you the *best experience* possible.
-
-✅ Fast & reliable service  
-💎 Premium-quality features  
-🔐 End-to-end privacy  
-🧠 User-friendly interface
-
-👇 Choose an option below to get started:`, {
+    return bot.sendMessage(chatId, `👋 *Welcome ${fullName}! ...`, {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
