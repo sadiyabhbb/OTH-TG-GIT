@@ -51,12 +51,11 @@ Thanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
       return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
     }
 
-    // 👑 If Admin
-    if (isAdmin) {
-      return bot.sendMessage(chatId, adminWelcome, {
-        parse_mode: 'MarkdownV2',
-        reply_markup: {
-          inline_keyboard: [
+    // 👑 If approved OR is admin
+    if (isApproved || isAdmin) {
+      const message = isAdmin ? adminWelcome : userWelcome;
+      const buttons = isAdmin
+        ? [
             [{ text: "📄 Users", callback_data: "users" }],
             [
               { text: "💳 Gen", callback_data: "gen" },
@@ -67,16 +66,7 @@ Thanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
               { text: "🕒 Uptime", callback_data: "uptime" }
             ]
           ]
-        }
-      });
-    }
-
-    // ✅ If Approved User
-    if (isApproved) {
-      return bot.sendMessage(chatId, userWelcome, {
-        parse_mode: 'MarkdownV2',
-        reply_markup: {
-          inline_keyboard: [
+        : [
             [
               { text: "💳 Gen", callback_data: "gen" },
               { text: "📩 TempMail", callback_data: "tempmail" }
@@ -85,8 +75,11 @@ Thanks for joining — let's make it simple, fast \\& premium. 🧡🤖`;
               { text: "🔐 2FA", callback_data: "2fa" },
               { text: "🕒 Uptime", callback_data: "uptime" }
             ]
-          ]
-        }
+          ];
+
+      return bot.sendMessage(chatId, message, {
+        parse_mode: 'MarkdownV2',
+        reply_markup: { inline_keyboard: buttons }
       });
     }
 
