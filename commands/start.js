@@ -3,12 +3,12 @@ const { loadDB, saveDB } = require('../utils/db');
 const notifyAdmin = require('../utils/notifyAdmin');
 
 module.exports = (bot) => {
-  // 🟢 /start command
+  // /start command
   bot.onText(/\/start/, (msg) => {
     handleStart(bot, msg.chat.id, msg.from);
   });
 
-  // 🔁 Back button handler
+  // back button handler
   bot.on('callback_query', (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
@@ -20,7 +20,6 @@ module.exports = (bot) => {
   });
 };
 
-// 🧠 Main start handler function
 function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const uid = from.id;
   const username = from.username || 'NoUsername';
@@ -32,12 +31,12 @@ function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const isBanned = userDB.banned.includes(uid);
   const isPending = userDB.pending.includes(uid);
 
-  // ❌ If banned
+  // 🚫 Banned user
   if (isBanned) {
     return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
   }
 
-  // ✅ Approved or Admin
+  // 👑 Admin or ✅ Approved User
   if (isAdmin || isApproved) {
     const message = isAdmin
       ? `👑 *Welcome, Admin!*
@@ -108,17 +107,11 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
     }
   }
 
-  // 🕒 If not approved, mark as pending (once)
-  if (!isPending) {
-    userDB.pending.push(uid);
-    saveDB(userDB);
-  }
-
-  // 🔒 Fancy Access Restricted message
-  const pendingMsg =
+  // ⏳ Not approved user → show pretty message & notify admin
+  const restrictedMsg =
 `🚫 *Access Restricted*
 
-👋 *Hello!*
+👋 Hello!
 Thank you for your interest in using *PremiumBot*.
 
 To ensure a secure and high-quality experience, access is limited to *authorized users only*.
@@ -135,6 +128,12 @@ Upon approval, you will gain full access to:
 🙏 We appreciate your understanding and cooperation.  
 — *The PremiumBot Team 🤖*`;
 
-  bot.sendMessage(chatId, pendingMsg, { parse_mode: 'Markdown' });
+  bot.sendMessage(chatId, restrictedMsg, { parse_mode: 'Markdown' });
+
+  if (!isPending) {
+    userDB.pending.push(uid);
+    saveDB(userDB);
+  }
+
   notifyAdmin(bot, uid, username, isPending);
 }
