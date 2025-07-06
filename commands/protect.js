@@ -1,17 +1,17 @@
-const checkAccess = require('../utils/checkAccess');
+   const checkAccess = require('../utils/checkAccess');
 
-module.exports = (bot) => {
-  bot.on('message', (msg) => {
-    const userId = msg.from.id;
-    const chatId = msg.chat.id;
-    const username = msg.from.username || 'NoUsername';
-    const fullName = `${msg.from.first_name || ''} ${msg.from.last_name || ''}`.trim();
+   module.exports = (bot) => {
+     bot.on('message', (msg) => {
+       const userId = msg.from.id;
+       const chatId = msg.chat.id;
+       const username = msg.from.username || 'NoUsername';
+       const fullName = `${msg.from.first_name || ''} ${msg.from.last_name || ''}`.trim();
 
-    const { isAdmin, isApproved } = checkAccess(userId, username);
+       const { isAdmin, isApproved } = checkAccess(userId, username);
 
-    // যদি approve না থাকে বা admin না হয় = Block everything
-    if (!isAdmin && !isApproved) {
-      const accessMsg = 
+       // যদি approve না থাকে বা admin না হয় = Block everything
+       if (!isAdmin && !isApproved) {
+         const accessMsg = 
 `⛔ *Access Restricted*
 
 👋 *Hello ${fullName}!*
@@ -31,9 +31,10 @@ Upon approval, you will gain full access to:
 🙏 We appreciate your understanding and cooperation.
 – *The ${process.env.BOT_NAME || 'Bot'} Team* 🤖`;
 
-      return bot.sendMessage(chatId, accessMsg, {
-        parse_mode: 'Markdown'
-      });
-    }
-  });
-};
+         return bot.sendMessage(chatId, accessMsg, {
+           parse_mode: 'Markdown'
+         });
+       }
+     });
+   };
+   
