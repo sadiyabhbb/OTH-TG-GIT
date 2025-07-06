@@ -1,43 +1,31 @@
-require('dotenv').config();
-const TelegramBot = require('node-telegram-bot-api');
-const http = require('http');
+// index.js
 
-// ✅ Bot start time
+const bot = require('./config/bot');
+const fs = require('fs');
+const path = require('path');
+
+// ⏱️ Store bot start time globally (for uptime feature)
 global.botStartTime = Date.now();
 
-// Load token from .env
-const token = process.env.BOT_TOKEN;
-if (!token) {
-  console.error("❌ BOT_TOKEN missing from .env");
-  process.exit(1);
+// 🧠 Load & verify user DB on startup
+const { loadDB, saveDB } = require('./utils/db');
+const userDB = loadDB();
+
+// Create user DB file if missing or malformed
+if (!userDB.approved || !userDB.pending || !userDB.banned) {
+  saveDB({ approved: [], pending: [], banned: [] });
 }
 
-// Bot config
-const config = {
-  ADMIN_UID: process.env.ADMIN_UID,
-  ADMIN_USERNAME: process.env.ADMIN_USERNAME
-};
-
-// Initialize bot
-const bot = new TelegramBot(token, { polling: true });
-
-// ✅ Load all command handlers (pass both bot and config)
-require('./commands/start')(bot, config);
-require('./commands/callback')(bot, config);
-// Other commands below...
-// require('./commands/gen')(bot, config);
-// require('./commands/admin')(bot, config);
-// etc...
-
-// 🌐 Keep-alive for Render
-http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('✅ Telegram bot is running!');
-}).listen(process.env.PORT || 3000);
-
-// Catch unhandled rejections
-process.on('unhandledRejection', (reason) => {
-  console.error('❌ Unhandled Promise:', reason);
+// 🚀 Auto-load all command files from commands/ folder
+const commandsPath = path.join(__dirname, 'commands');
+fs.readdirSync(commandsPath).forEach(file => {
+  if (file.endsWith('.js')) {
+    const command = require(`./commands/${file}`);
+    if (typeof command === 'function') {
+      command(bot); // Inject bot instance
+    }
+  }
 });
 
-console.log('✅ Bot is running...');
+// ✅ Bot started
+console.log('🤖 Telegram bot started successfully!');
