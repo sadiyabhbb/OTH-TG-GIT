@@ -29,7 +29,6 @@ require('./commands/twofa')(bot);
 require('./commands/checkemail')(bot);
 require('./commands/uptime')(bot); // Optional if you have a separate command
 require('./commands/callback')(bot); // ✅ Callback handler added
-require('./commands/protect')(bot); // ✅ Access protection
 
 // 🌐 Render keep-alive HTTP server
 http.createServer((req, res) => {
