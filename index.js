@@ -25,7 +25,7 @@ require('./commands/mass')(bot);
 require('./commands/twofa')(bot);
 require('./commands/checkemail')(bot);
 require('./commands/uptime')(bot);
-require('./commands/callbacks')(bot); // ✅ Added callback button handler
+require('./commands/callback')(bot); // ✅ Added callback button handler
 
 // 🌐 Render keep-alive HTTP server
 http.createServer((req, res) => {
