@@ -13,7 +13,7 @@ module.exports = (bot) => {
 
     const adminWelcome =
 `👑 *Welcome, Admin!*
-You've entered the premium control panel of *PremiumBot*\\.
+You've entered the *premium control panel* of *PremiumBot*\\.
 
 🔧 *Your access includes:*
 📊 Monitor user activity  
@@ -21,10 +21,11 @@ You've entered the premium control panel of *PremiumBot*\\.
 ⚙️ Configure features \\& limits  
 📈 Track system stats
 
-🛡 *Use commands responsibly to ensure smooth performance\\.*
+🛡️ *Use commands responsibly* to ensure smooth performance\\.
 
 Need support?  
 💬 Type */adminhelp* or contact the developer\\.`;
+
 
     const userWelcome =
 `👤 *Welcome, ${cleanUsername}!*
@@ -83,15 +84,15 @@ Thanks for joining — let's make it simple, fast \\& premium\\. 🧡🤖`;
       });
     }
 
-    // Not approved yet
     if (!isPending) {
       userDB.pending.push(uid);
       saveDB(userDB);
     }
 
-    const pendingMsg = `⏳ Your access is pending approval by @${ADMIN_USERNAME.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}\\.\\nPlease wait\\.\\.\\.`;
-
-    bot.sendMessage(chatId, pendingMsg, { parse_mode: 'MarkdownV2' });
+    bot.sendMessage(chatId,
+      `⏳ Your access is pending approval by @${ADMIN_USERNAME}\\.\\nPlease wait\\.`,
+      { parse_mode: 'MarkdownV2' }
+    );
     notifyAdmin(bot, uid, username, isPending);
   });
 };
