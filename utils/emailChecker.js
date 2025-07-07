@@ -1,51 +1,36 @@
 const axios = require('axios');
 
-const DOMAINS = [ '@iicloud.com.vn', '@mail10s.top', '@hotmail999.com', '@mailshopee.io.vn', '@gmail.com' ];
+const DOMAINS = [
+  '@iicloud.com.vn',
+  '@mail10s.top',
+  '@hotmail999.com',
+  '@mailshopee.io.vn',
+  '@gmail.com'
+];
 
-// Escape Markdown formatting characters function escapeMd(text) { return text.replace(/[_*`[]()~>#+=|{}.!-]/g, ''); }
-
-async function checkEmail(username, chatId, bot) { try { let found = false;
-
-for (const domain of DOMAINS) {
-  const email = `${username}${domain}`;
-  const apiUrl = `https://hotmail999.com/api/get_mail.php?email=${encodeURIComponent(email)}`;
-
+async function checkEmail(username) {
   try {
-    const { data } = await axios.get(apiUrl);
+    for (const domain of DOMAINS) {
+      const email = `${username}${domain}`;
+      const url = `https://hotmail999.com/api/get_mail.php?email=${encodeURIComponent(email)}`;
 
-    if (data?.status && data?.data?.length > 0) {
-      const mail = data.data[0];
-      const from = escapeMd(mail.from_field || 'Unknown');
-      const subject = escapeMd(mail.subject || 'No Subject');
+      const { data } = await axios.get(url);
 
-      const msg = `
+      if (data?.status && data?.data?.length > 0) {
+        const mail = data.data[0];
 
-🔔 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 OTP Received Successfully
+        const content = `🔔 *𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 OTP Received Successfully*\n\n🕒 *Time:* ${mail.date || 'Unknown'}\n⚙️ *Service:* Facebook\n✉️ *From:* ${mail.from_field || 'Unknown'}\n📧 *Mail:* \`${email}\`\n\n🔑 *Your OTP:* \`${mail.code || 'Not Found'}\`\n\n💌 *Full Message:* ${mail.subject || 'No Subject'}\n\n📖 حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ — *Allah is sufficient for us, and He is the best disposer.* (3:173)\n\n🚀 *Be Active  New OTP Coming*`;
 
-🕒 Time: ${mail.date || 'Unknown'} ⚙️ Service: Facebook ✉️ From: ${from} 📧 Mail: `${email}`
-
-🔑 Your OTP: `${mail.code || 'Not Found'}`
-
-💌 Full Message: ${subject}
-
-📖 حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ — Allah is sufficient for us, and He is the best disposer. (3:173)
-
-🚀 Be Active  New OTP Coming `;
-
-await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
-      found = true;
-      break;
+        return { success: true, content };
+      }
     }
+
+    return { success: false, content: null };
+
   } catch (error) {
-    console.error(`❌ Error checking ${email}:`, error?.response?.data || error.message);
+    console.error('❌ Email check failed:', error.message);
+    return { success: false, content: null };
   }
 }
 
-if (!found) {
-  await bot.sendMessage(chatId, `❌ \`${username}\` নামে কোনো ইমেইল পাওয়া যায়নি`, { parse_mode: 'Markdown' });
-}
-
-} catch (error) { console.error('❌ Email check error:', error?.response?.data || error.message); await bot.sendMessage(chatId, '⚠️ ইমেইল চেক করতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।'); } }
-
 module.exports = checkEmail;
-
