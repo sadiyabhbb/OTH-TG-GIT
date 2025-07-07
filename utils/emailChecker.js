@@ -32,14 +32,15 @@ async function checkEmail(username, chatId, bot) {
 
 🔑 *Your OTP:* \`${mail.code || 'Not Found'}\`
 
-💌 *Full Message:* ${mail.subject || 'No Subject'}
+💌 *Full Message:*
+${mail.subject || 'No Subject'}
 
-📖 حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ — *Allah is sufficient for us, and He is the best disposer.* (3:173)
+📖حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ — *Allah is sufficient for us, and He is the best disposer.* (3:173)
 
 🚀 *Be Active  New OTP Coming*
           `;
 
-          await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
+          await bot.sendMessage(chatId, msg.trim(), { parse_mode: 'Markdown' });
           found = true;
           break;
         }
@@ -49,9 +50,7 @@ async function checkEmail(username, chatId, bot) {
     }
 
     if (!found) {
-      await bot.sendMessage(chatId, `❌ \`${username}\` নামে কোনো ইমেইল পাওয়া যায়নি`, {
-        parse_mode: 'Markdown'
-      });
+      await bot.sendMessage(chatId, `❌ \`${username}\` নামে কোনো ইমেইল পাওয়া যায়নি`, { parse_mode: 'Markdown' });
     }
 
   } catch (error) {
