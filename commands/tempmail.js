@@ -1,63 +1,74 @@
-// 📁 commands/tempmail.js
+const { generateRandomEmail, fetchInbox, fetchFullEmail } = require('../utils/mailcxHandler');
+const { Markup } = require('telegraf');
 
-const {
-  generateRandomEmail,
-  fetchInbox,
-  fetchFullEmail
-} = require('../utils/mailHandler');
-
-const activeEmails = new Map();
+const tempMailSessions = {}; // User session
 
 module.exports = (bot) => {
-  bot.onText(/\.tempmail/, async (msg) => {
-    const chatId = msg.chat.id;
-    const email = generateRandomEmail();
-    activeEmails.set(chatId, email);
+  bot.command('tempmail', async (ctx) => {
+    const userId = ctx.from.id;
 
-    await sendInbox(bot, chatId, email);
+    // নতুন ইমেইল জেনারেট করে সেট করি
+    const email = generateRandomEmail();
+    tempMailSessions[userId] = {
+      email,
+      count: 0,
+    };
+
+    await ctx.replyWithHTML(
+      `📩 <b>TempMail Ready:</b>\n<code>${email}</code>\n\n🔄 প্রতি ৩০স পর inbox auto-refresh হবে (Max 5 বার)...`,
+      Markup.inlineKeyboard([
+        [Markup.button.callback('🔄 Refresh Now', 'refresh_mail')],
+      ])
+    );
+
+    autoRefresh(ctx, userId);
   });
 
-  // 🔁 Refresh button
-  bot.on('callback_query', async (query) => {
-    const chatId = query.message.chat.id;
-    const email = activeEmails.get(chatId);
+  bot.action('refresh_mail', async (ctx) => {
+    const userId = ctx.from.id;
+    await ctx.answerCbQuery();
 
-    if (query.data === 'refresh_inbox' && email) {
-      await bot.answerCallbackQuery(query.id, { text: '🔄 রিফ্রেশ হচ্ছে...' });
-      await sendInbox(bot, chatId, email, true);
+    if (!tempMailSessions[userId]) {
+      return ctx.reply('❗ প্রথমে `.tempmail` চালাও!');
     }
+
+    const email = tempMailSessions[userId].email;
+    const inbox = await fetchInbox(email);
+
+    if (!inbox.length) {
+      return ctx.replyWithHTML(`📥 টেম্পমেইল: <code>${email}</code>\n❌ <b>কোন মেইল পাওয়া যায়নি!</b>`);
+    }
+
+    const latest = inbox[0];
+    const full = await fetchFullEmail(email, latest.id);
+    const body = full?.text || full?.html || '(কোনো কন্টেন্ট পাওয়া যায়নি)';
+
+    ctx.replyWithHTML(`📥 <b>টেম্পমেইল:</b> <code>${email}</code>\n\n🆔 <b>From:</b> ${latest.from}\n✉️ <b>Subject:</b> ${latest.subject}\n\n<pre>${body.trim()}</pre>`);
   });
 };
 
-async function sendInbox(bot, chatId, email, isRefresh = false) {
-  const inbox = await fetchInbox(email);
-  const mailList = inbox.slice(0, 5); // সর্বোচ্চ ৫টি দেখাবে
+function autoRefresh(ctx, userId) {
+  const interval = setInterval(async () => {
+    if (!tempMailSessions[userId]) return clearInterval(interval);
 
-  if (!mailList.length) {
-    const msg = `📭 *টেম্পমেইল:* \`${email}\`\n\n❌ কোন মেইল পাওয়া যায়নি!`;
-    return bot.sendMessage(chatId, msg, {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [[{ text: '🔄 রিফ্রেশ', callback_data: 'refresh_inbox' }]]
-      }
-    });
-  }
-
-  let msg = `📬 *টেম্পমেইল:* \`${email}\`\n\n`;
-
-  for (const mail of mailList) {
-    const full = await fetchFullEmail(email, mail.id);
-    msg += `🕒 ${mail.date || 'N/A'}\n`;
-    msg += `📧 *From:* ${mail.from || 'Unknown'}\n`;
-    msg += `📌 *Subject:* ${mail.subject || 'No Subject'}\n`;
-    msg += `📩 *Message:* \`${(full?.text || '').slice(0, 100).replace(/`/g, '') || 'N/A'}\`\n`;
-    msg += `────────────────────\n`;
-  }
-
-  return bot.sendMessage(chatId, msg, {
-    parse_mode: 'Markdown',
-    reply_markup: {
-      inline_keyboard: [[{ text: '🔄 রিফ্রেশ', callback_data: 'refresh_inbox' }]]
+    tempMailSessions[userId].count += 1;
+    if (tempMailSessions[userId].count > 4) {
+      delete tempMailSessions[userId];
+      clearInterval(interval);
+      return;
     }
-  });
+
+    const email = tempMailSessions[userId].email;
+    const inbox = await fetchInbox(email);
+
+    if (inbox.length > 0) {
+      const latest = inbox[0];
+      const full = await fetchFullEmail(email, latest.id);
+      const body = full?.text || full?.html || '(কোনো কন্টেন্ট পাওয়া যায়নি)';
+
+      ctx.replyWithHTML(`📥 <b>টেম্পমেইল:</b> <code>${email}</code>\n\n🆔 <b>From:</b> ${latest.from}\n✉️ <b>Subject:</b> ${latest.subject}\n\n<pre>${body.trim()}</pre>`);
+      clearInterval(interval);
+      delete tempMailSessions[userId];
+    }
+  }, 30000); // ৩০ সেকেন্ড পরপর
 }
