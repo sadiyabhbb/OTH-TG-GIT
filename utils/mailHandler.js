@@ -1,9 +1,14 @@
+// 📁 utils/mailHandler.js
+
 const axios = require('axios');
 const crypto = require('crypto');
 
+const DOMAINS = ['qabq.com', 'nqmo.com', 'end.tw', 'uuf.me', '6n9.net'];
+
 function generateRandomEmail() {
   const random = crypto.randomBytes(5).toString('hex');
-  return `${random}@mail.cx`;
+  const domain = DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
+  return `${random}@${domain}`;
 }
 
 async function fetchInbox(email) {
