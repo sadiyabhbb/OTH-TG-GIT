@@ -1,16 +1,17 @@
-// 📁 utils/mailHandler.js
-
 const axios = require('axios');
 const crypto = require('crypto');
 
-const DOMAINS = ['qabq.com', 'nqmo.com', 'end.tw', 'uuf.me', '6n9.net'];
+// ✅ Latest domains from Mail.cx (TempMail.Ninja)
+const validDomains = ['qabq.com', 'nqmo.com', 'end.tw', 'uuf.me', '6n9.net'];
 
+// 🔁 Random domain and hex name
 function generateRandomEmail() {
-  const random = crypto.randomBytes(5).toString('hex');
-  const domain = DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
-  return `${random}@${domain}`;
+  const randomName = crypto.randomBytes(5).toString('hex');
+  const domain = validDomains[Math.floor(Math.random() * validDomains.length)];
+  return `${randomName}@${domain}`;
 }
 
+// 📥 Fetch inbox using only prefix (API doesn't take domain)
 async function fetchInbox(email) {
   const name = email.split('@')[0];
   const url = `https://api.mail.cx/mailbox/${name}`;
@@ -23,6 +24,7 @@ async function fetchInbox(email) {
   }
 }
 
+// 📬 Fetch full email
 async function fetchFullEmail(email, id) {
   const name = email.split('@')[0];
   const url = `https://api.mail.cx/mailbox/${name}/${id}`;
@@ -38,5 +40,6 @@ async function fetchFullEmail(email, id) {
 module.exports = {
   generateRandomEmail,
   fetchInbox,
-  fetchFullEmail
+  fetchFullEmail,
+  validDomains
 };
