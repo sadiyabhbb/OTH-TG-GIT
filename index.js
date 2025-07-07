@@ -16,6 +16,9 @@ app.get('/', (req, res) => {
 // ⏱️ Global uptime
 global.botStartTime = Date.now();
 
+// ✅ For tempmail/otp command to track active email per user
+global.activeEmails = {};
+
 // ✅ Optional DB (safe load)
 let userDB = { approved: [], pending: [], banned: [] };
 try {
@@ -29,7 +32,7 @@ try {
   console.warn('⚠️ DB module missing or error:', err.message);
 }
 
-// ✅ Load command files dynamically (if folder exists)
+// ✅ Load command files dynamically from /commands folder
 const commandsPath = path.join(__dirname, 'commands');
 if (fs.existsSync(commandsPath)) {
   fs.readdir(commandsPath, (err, files) => {
@@ -52,7 +55,7 @@ if (fs.existsSync(commandsPath)) {
   });
 }
 
-// 🚀 Start Express server
+// 🚀 Start Express server for uptime support (Render, etc.)
 app.listen(port, () => {
   console.log(`✅ Bot server running via polling on port ${port}`);
 });
