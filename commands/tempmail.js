@@ -1,81 +1,69 @@
-// 📁 commands/tempmail.js
-const {
-  generateRandomEmail,
-  fetchInbox,
-  fetchFullEmail,
-} = require('../utils/mailcxHandler');
+const { generateRandomEmail, fetchInbox, fetchFullEmail } = require('../utils/mailcxHandler');
 
 module.exports = (bot) => {
-  const activeSessions = {};
+  const activeEmails = new Map(); // Keep track of session emails
 
+  // .tempmail command
   bot.onText(/\.tempmail/, async (msg) => {
     const chatId = msg.chat.id;
     const email = generateRandomEmail();
-    const username = email.split('@')[0];
+    activeEmails.set(chatId, email);
 
-    activeSessions[chatId] = { email, count: 0 };
+    const message = `📥 *TempMail Ready:*\n\`${email}\`\n\n🔄 প্রতি ৩০স পর inbox auto-refresh হবে (Max 5 বার)...`;
+    const refreshBtn = {
+      inline_keyboard: [
+        [{ text: '🔄 Refresh Now', callback_data: 'refresh_now' }]
+      ]
+    };
 
-    const infoText = `📩 *TempMail Ready:*\n\`${email}\`\n\n🔄 প্রতি ৩০s পর inbox auto-refresh হবে (Max 5 বার)...`;
-
-    const message = await bot.sendMessage(chatId, infoText, {
+    await bot.sendMessage(chatId, message, {
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🔁 Refresh Now', callback_data: `refresh_mailcx_${username}` }],
-        ],
-      },
+      reply_markup: refreshBtn
     });
-
-    // Auto refresh max 5 times
-    const interval = setInterval(async () => {
-      const session = activeSessions[chatId];
-      if (!session || session.count >= 5) {
-        clearInterval(interval);
-        delete activeSessions[chatId];
-        return;
-      }
-
-      session.count++;
-      const inbox = await fetchInbox(email);
-
-      if (inbox.length > 0) {
-        const latest = inbox[0];
-        const full = await fetchFullEmail(email, latest.id);
-
-        if (full) {
-          const mailText = `📬 *নতুন মেইল এসেছে!*\n🧾 *From:* ${full.from}\n📝 *Subject:* ${full.subject}\n📨 *Body:*\n${full.text || 'Body ফাঁকা'}`;
-          bot.sendMessage(chatId, mailText, { parse_mode: 'Markdown' });
-        }
-      }
-    }, 30000); // 30s
   });
 
-  // 🔁 Manual refresh handler
+  // Handle "Refresh Now" button
   bot.on('callback_query', async (query) => {
-    const data = query.data;
     const chatId = query.message.chat.id;
+    const data = query.data;
 
-    if (data.startsWith('refresh_mailcx_')) {
-      const username = data.split('refresh_mailcx_')[1];
-      const email = `${username}@mail.cx`;
-      const inbox = await fetchInbox(email);
+    if (data === 'refresh_now') {
+      await bot.answerCallbackQuery(query.id, { text: '♻️ Refreshing...' });
 
-      if (inbox.length === 0) {
-        return bot.answerCallbackQuery(query.id, {
-          text: '📭 এখনো কোনো মেইল আসেনি!',
-          show_alert: false,
-        });
+      const email = activeEmails.get(chatId);
+      if (!email) {
+        return bot.sendMessage(chatId, '⚠️ কোনো active tempmail session পাওয়া যায়নি।');
       }
 
-      const latest = inbox[0];
-      const full = await fetchFullEmail(email, latest.id);
+      try {
+        const messages = await fetchInbox(email);
 
-      if (full) {
-        const mailText = `📬 *নতুন মেইল এসেছে!*\n🧾 *From:* ${full.from}\n📝 *Subject:* ${full.subject}\n📨 *Body:*\n${full.text || 'Body ফাঁকা'}`;
-        bot.sendMessage(chatId, mailText, { parse_mode: 'Markdown' });
+        if (!messages || messages.length === 0) {
+          return bot.sendMessage(chatId, `❌ \`${email}\` এর ইনবক্সে কোনো মেইল পাওয়া যায়নি`, {
+            parse_mode: 'Markdown'
+          });
+        }
+
+        for (const mail of messages) {
+          const full = await fetchFullEmail(email, mail.id);
+          const content = full?.body || '[No content]';
+
+          const formatted = `
+📨 *নতুন মেইল পাওয়া গেছে!*
+✉️ *From:* ${mail.from}
+📛 *Subject:* ${mail.subject || 'No subject'}
+🧾 *Body:* 
+\`\`\`
+${content.slice(0, 1000)}
+\`\`\`
+          `;
+          await bot.sendMessage(chatId, formatted, { parse_mode: 'Markdown' });
+        }
+
+      } catch (err) {
+        console.error('Refresh error:', err.message);
+        await bot.sendMessage(chatId, '⚠️ মেইল রিফ্রেশে সমস্যা হয়েছে। দয়া করে পরে চেষ্টা করুন।');
       }
-
-      bot.answerCallbackQuery(query.id);
     }
   });
 };
