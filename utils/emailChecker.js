@@ -8,47 +8,33 @@ const DOMAINS = [
   '@gmail.com'
 ];
 
-async function checkEmail(username, chatId, bot) {
-  try {
-    await bot.sendMessage(chatId, `⏳ *${username}* এর জন্য ইমেইল খোঁজা হচ্ছে...`, { parse_mode: 'Markdown' });
+async function checkEmail(username) {
+  for (const domain of DOMAINS) {
+    const email = `${username}${domain}`;
+    const url = `https://hotmail999.com/api/get_mail.php?email=${encodeURIComponent(email)}`;
 
-    let found = false;
+    try {
+      const { data } = await axios.get(url);
 
-    for (const domain of DOMAINS) {
-      const email = `${username}${domain}`;
-      const apiUrl = `https://hotmail999.com/api/get_mail.php?email=${encodeURIComponent(email)}`;
-
-      try {
-        const { data } = await axios.get(apiUrl);
-
-        if (data?.status && data?.data?.length > 0) {
-          const mail = data.data[0];
-          const msg = `
+      if (data?.status && data?.data?.length > 0) {
+        const mail = data.data[0];
+        const message = `
 📭 *ইমেইল পাওয়া গেছে!*
 ✉️ *ঠিকানা:* \`${email}\`
 🕒 *সময়:* ${mail.date || 'Unknown'}
 📧 *প্রেরক:* ${mail.from_field || 'Unknown'}
 📝 *বিষয়:* ${mail.subject || 'No Subject'}
 🔢 *OTP কোড:* \`${mail.code || 'Not Found'}\`
-          `;
+        `.trim();
 
-          await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
-          found = true;
-          break;
-        }
-      } catch (error) {
-        console.error(`Error checking ${email}:`, error.message);
+        return { success: true, content: message };
       }
+    } catch (err) {
+      console.error(`❌ ${email} চেক করতে সমস্যা:`, err.message);
     }
-
-    if (!found) {
-      await bot.sendMessage(chatId, `❌ *${username}* নামে কোনো ইমেইল পাওয়া যায়নি`, { parse_mode: 'Markdown' });
-    }
-
-  } catch (error) {
-    console.error('General error in checkEmail:', error);
-    bot.sendMessage(chatId, '⚠️ সার্ভারে সমস্যা হচ্ছে, পরে চেষ্টা করুন');
   }
+
+  return { success: false };
 }
 
 module.exports = checkEmail;
