@@ -10,43 +10,53 @@ const DOMAINS = [
 
 async function checkEmail(username, chatId, bot) {
   try {
+    let found = false;
+
     for (const domain of DOMAINS) {
       const email = `${username}${domain}`;
       const apiUrl = `https://hotmail999.com/api/get_mail.php?email=${encodeURIComponent(email)}`;
 
-      const { data } = await axios.get(apiUrl);
+      try {
+        const { data } = await axios.get(apiUrl);
 
-      if (data?.status && data?.data?.length > 0) {
-        const mail = data.data[0];
+        if (data?.status && data?.data?.length > 0) {
+          const mail = data.data[0];
 
-        const msg = `
+          const msg = `
 🔔 *𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 OTP Received Successfully*
 
 🕒 *Time:* ${mail.date || 'Unknown'}
 ⚙️ *Service:* Facebook
-✉️ *Mail:* \`${mail.from_field || 'Unknown' }\`
+✉️ *From:* ${mail.from_field || 'Unknown'}
+📧 *Mail:* \`${email}\`
 
 🔑 *Your OTP:* \`${mail.code || 'Not Found'}\`
 
-💌 *Full Message:*
-${mail.subject || 'No Subject'}
+💌 *Full Message:* ${mail.subject || 'No Subject'}
 
 📖 حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ — *Allah is sufficient for us, and He is the best disposer.* (3:173)
 
-🚀 *Be Active  New OTP Coming...*
-        `;
+🚀 *Be Active  New OTP Coming*
+          `;
 
-        await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
-        return;
+          await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
+          found = true;
+          break;
+        }
+      } catch (error) {
+        console.error(`❌ Error checking ${email}:`, error?.response?.data || error.message);
       }
     }
 
-    await bot.sendMessage(chatId, `❌ কোনো ইমেইল পাওয়া যায়নি ${username} এর জন্য`, {
-      parse_mode: 'Markdown'
-    });
+    if (!found) {
+      await bot.sendMessage(chatId, `❌ \`${username}\` নামে কোনো ইমেইল পাওয়া যায়নি`, {
+        parse_mode: 'Markdown'
+      });
+    }
+
   } catch (error) {
-    console.error('❌ Email check error:', error.message);
-    bot.sendMessage(chatId, '⚠️ সার্ভারে সমস্যা হচ্ছে, পরে আবার চেষ্টা করুন।');
+    console.error('❌ Email check error:', error?.response?.data || error.message);
+    await bot.sendMessage(chatId, '⚠️ ইমেইল চেক করতে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।');
   }
 }
 
