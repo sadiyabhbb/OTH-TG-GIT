@@ -1,69 +1,63 @@
-const { generateRandomEmail, fetchInbox, fetchFullEmail } = require('../utils/mailcxHandler');
+// 📁 commands/tempmail.js
+
+const {
+  generateRandomEmail,
+  fetchInbox,
+  fetchFullEmail
+} = require('../utils/mailHandler');
+
+const activeEmails = new Map();
 
 module.exports = (bot) => {
-  const activeEmails = new Map(); // Keep track of session emails
-
-  // .tempmail command
   bot.onText(/\.tempmail/, async (msg) => {
     const chatId = msg.chat.id;
     const email = generateRandomEmail();
     activeEmails.set(chatId, email);
 
-    const message = `📥 *TempMail Ready:*\n\`${email}\`\n\n🔄 প্রতি ৩০স পর inbox auto-refresh হবে (Max 5 বার)...`;
-    const refreshBtn = {
-      inline_keyboard: [
-        [{ text: '🔄 Refresh Now', callback_data: 'refresh_now' }]
-      ]
-    };
-
-    await bot.sendMessage(chatId, message, {
-      parse_mode: 'Markdown',
-      reply_markup: refreshBtn
-    });
+    await sendInbox(bot, chatId, email);
   });
 
-  // Handle "Refresh Now" button
+  // 🔁 Refresh button
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
-    const data = query.data;
+    const email = activeEmails.get(chatId);
 
-    if (data === 'refresh_now') {
-      await bot.answerCallbackQuery(query.id, { text: '♻️ Refreshing...' });
-
-      const email = activeEmails.get(chatId);
-      if (!email) {
-        return bot.sendMessage(chatId, '⚠️ কোনো active tempmail session পাওয়া যায়নি।');
-      }
-
-      try {
-        const messages = await fetchInbox(email);
-
-        if (!messages || messages.length === 0) {
-          return bot.sendMessage(chatId, `❌ \`${email}\` এর ইনবক্সে কোনো মেইল পাওয়া যায়নি`, {
-            parse_mode: 'Markdown'
-          });
-        }
-
-        for (const mail of messages) {
-          const full = await fetchFullEmail(email, mail.id);
-          const content = full?.body || '[No content]';
-
-          const formatted = `
-📨 *নতুন মেইল পাওয়া গেছে!*
-✉️ *From:* ${mail.from}
-📛 *Subject:* ${mail.subject || 'No subject'}
-🧾 *Body:* 
-\`\`\`
-${content.slice(0, 1000)}
-\`\`\`
-          `;
-          await bot.sendMessage(chatId, formatted, { parse_mode: 'Markdown' });
-        }
-
-      } catch (err) {
-        console.error('Refresh error:', err.message);
-        await bot.sendMessage(chatId, '⚠️ মেইল রিফ্রেশে সমস্যা হয়েছে। দয়া করে পরে চেষ্টা করুন।');
-      }
+    if (query.data === 'refresh_inbox' && email) {
+      await bot.answerCallbackQuery(query.id, { text: '🔄 রিফ্রেশ হচ্ছে...' });
+      await sendInbox(bot, chatId, email, true);
     }
   });
 };
+
+async function sendInbox(bot, chatId, email, isRefresh = false) {
+  const inbox = await fetchInbox(email);
+  const mailList = inbox.slice(0, 5); // সর্বোচ্চ ৫টি দেখাবে
+
+  if (!mailList.length) {
+    const msg = `📭 *টেম্পমেইল:* \`${email}\`\n\n❌ কোন মেইল পাওয়া যায়নি!`;
+    return bot.sendMessage(chatId, msg, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [[{ text: '🔄 রিফ্রেশ', callback_data: 'refresh_inbox' }]]
+      }
+    });
+  }
+
+  let msg = `📬 *টেম্পমেইল:* \`${email}\`\n\n`;
+
+  for (const mail of mailList) {
+    const full = await fetchFullEmail(email, mail.id);
+    msg += `🕒 ${mail.date || 'N/A'}\n`;
+    msg += `📧 *From:* ${mail.from || 'Unknown'}\n`;
+    msg += `📌 *Subject:* ${mail.subject || 'No Subject'}\n`;
+    msg += `📩 *Message:* \`${(full?.text || '').slice(0, 100).replace(/`/g, '') || 'N/A'}\`\n`;
+    msg += `────────────────────\n`;
+  }
+
+  return bot.sendMessage(chatId, msg, {
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [[{ text: '🔄 রিফ্রেশ', callback_data: 'refresh_inbox' }]]
+    }
+  });
+}
