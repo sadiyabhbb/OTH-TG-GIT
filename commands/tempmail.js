@@ -7,6 +7,7 @@ const {
 module.exports = (bot) => {
   const activeEmails = {};
 
+  // টেম্পমেইল তৈরি করার কমান্ড
   bot.onText(/\.tempmail/, async (msg) => {
     const chatId = msg.chat.id;
     const email = generateRandomEmail();
@@ -20,6 +21,7 @@ module.exports = (bot) => {
     });
   });
 
+  // ইনবক্স রিফ্রেশ করার জন্য কলব্যাক কুয়েরি
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const email = activeEmails[chatId];
@@ -46,6 +48,7 @@ module.exports = (bot) => {
 
     let body = full?.body || 'বডি পাওয়া যায়নি';
 
+    // বডি 4000 ক্যারেক্টারের বেশি হলে কাটুন
     if (body.length > 4000) body = body.slice(0, 4000) + '...';
 
     const msg = `📥 নতুন মেইল পাওয়া গেছে!\n\n✉️ Email: \`${email}\`\n🕒 Time: ${latest.date}\n📧 From: ${latest.from}\n📌 Subject: ${latest.subject}\n\n📝 Message:\n${body}`;
