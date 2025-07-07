@@ -1,74 +1,64 @@
-const { generateRandomEmail, fetchInbox, fetchFullEmail } = require('../utils/mailcxHandler');
-const { Markup } = require('telegraf');
-
-const tempMailSessions = {}; // User session
+const {
+  generateRandomEmail,
+  fetchInbox,
+  fetchFullEmail
+} = require('../utils/mailcxHandler');
 
 module.exports = (bot) => {
-  bot.command('tempmail', async (ctx) => {
-    const userId = ctx.from.id;
+  const activeEmails = {};
 
-    // নতুন ইমেইল জেনারেট করে সেট করি
+  bot.onText(/\.tempmail/, async (msg) => {
+    const chatId = msg.chat.id;
     const email = generateRandomEmail();
-    tempMailSessions[userId] = {
-      email,
-      count: 0,
-    };
+    activeEmails[chatId] = email;
 
-    await ctx.replyWithHTML(
-      `📩 <b>TempMail Ready:</b>\n<code>${email}</code>\n\n🔄 প্রতি ৩০স পর inbox auto-refresh হবে (Max 5 বার)...`,
-      Markup.inlineKeyboard([
-        [Markup.button.callback('🔄 Refresh Now', 'refresh_mail')],
-      ])
-    );
-
-    autoRefresh(ctx, userId);
+    await bot.sendMessage(chatId, `📬 আপনার টেম্পমেইল তৈরি হয়েছে:\n\`${email}\``, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [[{ text: '🔄 Refresh', callback_data: 'refresh_inbox' }]]
+      }
+    });
   });
 
-  bot.action('refresh_mail', async (ctx) => {
-    const userId = ctx.from.id;
-    await ctx.answerCbQuery();
+  bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const email = activeEmails[chatId];
 
-    if (!tempMailSessions[userId]) {
-      return ctx.reply('❗ প্রথমে `.tempmail` চালাও!');
+    if (!email) {
+      return bot.answerCallbackQuery(query.id, { text: '❌ প্রথমে .tempmail দিন' });
     }
 
-    const email = tempMailSessions[userId].email;
     const inbox = await fetchInbox(email);
 
-    if (!inbox.length) {
-      return ctx.replyWithHTML(`📥 টেম্পমেইল: <code>${email}</code>\n❌ <b>কোন মেইল পাওয়া যায়নি!</b>`);
+    if (inbox.length === 0) {
+      return bot.editMessageText(`📭 মেইল নেই এখনো\n\`${email}\``, {
+        chat_id: chatId,
+        message_id: query.message.message_id,
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🔄 Refresh', callback_data: 'refresh_inbox' }]]
+        }
+      });
     }
 
     const latest = inbox[0];
     const full = await fetchFullEmail(email, latest.id);
-    const body = full?.text || full?.html || '(কোনো কন্টেন্ট পাওয়া যায়নি)';
 
-    ctx.replyWithHTML(`📥 <b>টেম্পমেইল:</b> <code>${email}</code>\n\n🆔 <b>From:</b> ${latest.from}\n✉️ <b>Subject:</b> ${latest.subject}\n\n<pre>${body.trim()}</pre>`);
+    let body = full?.body || 'বডি পাওয়া যায়নি';
+
+    if (body.length > 4000) body = body.slice(0, 4000) + '...';
+
+    const msg = `📥 নতুন মেইল পাওয়া গেছে!\n\n✉️ Email: \`${email}\`\n🕒 Time: ${latest.date}\n📧 From: ${latest.from}\n📌 Subject: ${latest.subject}\n\n📝 Message:\n${body}`;
+
+    await bot.editMessageText(msg, {
+      chat_id: chatId,
+      message_id: query.message.message_id,
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [[{ text: '🔄 Refresh', callback_data: 'refresh_inbox' }]]
+      }
+    });
+
+    await bot.answerCallbackQuery(query.id);
   });
 };
-
-function autoRefresh(ctx, userId) {
-  const interval = setInterval(async () => {
-    if (!tempMailSessions[userId]) return clearInterval(interval);
-
-    tempMailSessions[userId].count += 1;
-    if (tempMailSessions[userId].count > 4) {
-      delete tempMailSessions[userId];
-      clearInterval(interval);
-      return;
-    }
-
-    const email = tempMailSessions[userId].email;
-    const inbox = await fetchInbox(email);
-
-    if (inbox.length > 0) {
-      const latest = inbox[0];
-      const full = await fetchFullEmail(email, latest.id);
-      const body = full?.text || full?.html || '(কোনো কন্টেন্ট পাওয়া যায়নি)';
-
-      ctx.replyWithHTML(`📥 <b>টেম্পমেইল:</b> <code>${email}</code>\n\n🆔 <b>From:</b> ${latest.from}\n✉️ <b>Subject:</b> ${latest.subject}\n\n<pre>${body.trim()}</pre>`);
-      clearInterval(interval);
-      delete tempMailSessions[userId];
-    }
-  }, 30000); // ৩০ সেকেন্ড পরপর
-}
