@@ -16,13 +16,22 @@ module.exports = (bot) => {
     const domain = DOMAINS[Math.floor(Math.random() * DOMAINS.length)];
     const email = `${name}${domain}`;
 
-    bot.sendMessage(chatId, `📩 *TempMail Ready:*\n\`${email}\`\n\n🕓 প্রতি 5s পর inbox auto-refresh হবে...`, {
+    await bot.sendMessage(chatId, `📩 *TempMail Ready:*\n\`${email}\`\n\n🔄 প্রতি 30s পর inbox auto-refresh হবে (Max 5 বার)...`, {
       parse_mode: 'Markdown'
     });
 
     let lastMailId = null;
+    let startTime = Date.now();
+    let maxMail = 5;
+    let count = 0;
 
     const interval = setInterval(async () => {
+      const now = Date.now();
+      if (now - startTime > 3 * 60 * 1000 || count >= maxMail) {
+        clearInterval(interval);
+        return bot.sendMessage(chatId, '✅ TempMail session ended automatically.');
+      }
+
       try {
         const url = `https://hotmail999.com/api/get_mail.php?email=${encodeURIComponent(email)}`;
         const res = await axios.get(url, { timeout: 7000 });
@@ -33,6 +42,7 @@ module.exports = (bot) => {
 
           if (mail.mail_id !== lastMailId) {
             lastMailId = mail.mail_id;
+            count++;
 
             const msgText = `📥 *নতুন মেইল এসেছে!*
 
@@ -50,6 +60,6 @@ module.exports = (bot) => {
         bot.sendMessage(chatId, '❌ Session বন্ধ হয়ে গেছে বা মেইল লোডে সমস্যা হয়েছে।');
         console.error('Tempmail error:', err.message);
       }
-    }, 5000);
+    }, 30 * 1000); // ← 30 seconds interval
   });
 };
