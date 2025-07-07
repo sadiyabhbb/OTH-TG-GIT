@@ -52,11 +52,6 @@ if (fs.existsSync(commandsPath)) {
   });
 }
 
-// ✅ Basic fallback command (works even if commands folder is empty)
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, '👋 Bot is working! You sent /start.');
-});
-
 // 🚀 Start Express server
 app.listen(port, () => {
   console.log(`✅ Bot server running via polling on port ${port}`);
