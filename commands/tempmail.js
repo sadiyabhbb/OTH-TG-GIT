@@ -7,14 +7,17 @@ const {
 module.exports = (bot) => {
   const activeEmails = {};
 
-  // .tempmail কমান্ড: নতুন random email তৈরি করে user কে দেখায়
+  // MarkdownV2 escape function
+  const escapeMd = (text) => text.replace(/([_*[\]()~`>#+=|{}.!\\-])/g, '\\$1');
+
+  // .tempmail command
   bot.onText(/\.tempmail/, async (msg) => {
     const chatId = msg.chat.id;
     const email = generateRandomEmail();
     activeEmails[chatId] = email;
 
-    await bot.sendMessage(chatId, `📬 আপনার টেম্পমেইল তৈরি হয়েছে:\n\`${email}\``, {
-      parse_mode: 'Markdown',
+    await bot.sendMessage(chatId, `📬 আপনার টেম্পমেইল তৈরি হয়েছে:\n\`${escapeMd(email)}\``, {
+      parse_mode: 'MarkdownV2',
       reply_markup: {
         inline_keyboard: [
           [{ text: '🔄 Refresh', callback_data: 'refresh_inbox' }]
@@ -23,7 +26,7 @@ module.exports = (bot) => {
     });
   });
 
-  // 🔄 Refresh ইনবক্স কলব্যাক হ্যান্ডলার
+  // 🔄 Refresh callback
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
@@ -40,16 +43,19 @@ module.exports = (bot) => {
       const inbox = await fetchInbox(email);
 
       if (inbox.length === 0) {
-        return bot.editMessageText(`📭 এখনও কোনো মেইল নেই\n\`${email}\``, {
-          chat_id: chatId,
-          message_id: messageId,
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '🔄 Refresh', callback_data: 'refresh_inbox' }]
-            ]
+        return bot.editMessageText(
+          `📭 এখনও কোনো মেইল নেই\n\`${escapeMd(email)}\``,
+          {
+            chat_id: chatId,
+            message_id: messageId,
+            parse_mode: 'MarkdownV2',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🔄 Refresh', callback_data: 'refresh_inbox' }]
+              ]
+            }
           }
-        });
+        );
       }
 
       const latest = inbox[0];
@@ -57,16 +63,12 @@ module.exports = (bot) => {
 
       let body = full?.body || '❌ বডি পাওয়া যায়নি';
 
-      // বড় বার্তা কেটে ফেলা
       if (body.length > 4000) {
         body = body.slice(0, 4000) + '\n\n...🔚';
       }
 
-      // Markdown escaping
-      const escapeMd = (text) => text.replace(/([_*[\]()~`>#+=|{}.!\\-])/g, '\\$1');
-
       const msg = `📥 *নতুন মেইল পাওয়া গেছে!*\n\n` +
-        `✉️ *Email:* \`${email}\`\n` +
+        `✉️ *Email:* \`${escapeMd(email)}\`\n` +
         `🕒 *Time:* \`${escapeMd(latest.date)}\`\n` +
         `📧 *From:* \`${escapeMd(latest.from)}\`\n` +
         `📌 *Subject:* \`${escapeMd(latest.subject)}\`\n\n` +
