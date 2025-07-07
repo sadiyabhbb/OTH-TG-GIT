@@ -8,52 +8,56 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ Express root route (for Render health check or UptimeRobot ping)
+// ✅ Root route for Render/UptimeRobot
 app.get('/', (req, res) => {
   res.send('🤖 Telegram bot is live and using polling!');
 });
 
-// ⏱️ Global uptime (optional use)
+// ⏱️ Global uptime
 global.botStartTime = Date.now();
 
-// 🗃️ Load user DB safely
-const { loadDB, saveDB } = require('./utils/db');
-let userDB;
+// ✅ Optional DB (safe load)
+let userDB = { approved: [], pending: [], banned: [] };
 try {
+  const { loadDB, saveDB } = require('./utils/db');
   userDB = loadDB();
   if (!userDB.approved || !userDB.pending || !userDB.banned) {
     userDB = { approved: [], pending: [], banned: [] };
     saveDB(userDB);
   }
 } catch (err) {
-  console.error('❌ Failed to load user DB:', err);
-  userDB = { approved: [], pending: [], banned: [] };
-  saveDB(userDB);
+  console.warn('⚠️ DB module missing or error:', err.message);
 }
 
-// 🔁 Dynamically load all command files
+// ✅ Load command files dynamically (if folder exists)
 const commandsPath = path.join(__dirname, 'commands');
-fs.readdir(commandsPath, (err, files) => {
-  if (err) {
-    console.error('❌ Failed to load command files:', err);
-    return;
-  }
-
-  files.forEach(file => {
-    if (file.endsWith('.js')) {
-      try {
-        const command = require(path.join(commandsPath, file));
-        if (typeof command === 'function') {
-          command(bot);
+if (fs.existsSync(commandsPath)) {
+  fs.readdir(commandsPath, (err, files) => {
+    if (err) {
+      console.error('❌ Failed to load commands:', err.message);
+    } else {
+      files.forEach(file => {
+        if (file.endsWith('.js')) {
+          try {
+            const command = require(path.join(commandsPath, file));
+            if (typeof command === 'function') {
+              command(bot);
+            }
+          } catch (e) {
+            console.error(`❌ Error in ${file}:`, e.message);
+          }
         }
-      } catch (error) {
-        console.error(`❌ Error loading command ${file}:`, error);
-      }
+      });
     }
   });
+}
+
+// ✅ Basic fallback command (works even if commands folder is empty)
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, '👋 Bot is working! You sent /start.');
 });
 
-// 🚀 Start express server (Render requires this to keep service alive)
+// 🚀 Start Express server
 app.listen(port, () => {
   console.log(`✅ Bot server running via polling on port ${port}`);
 });
