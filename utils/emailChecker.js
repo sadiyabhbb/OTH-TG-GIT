@@ -8,6 +8,11 @@ const DOMAINS = [
   '@gmail.com'
 ];
 
+function extractCodeFromText(text) {
+  const match = text.match(/\\b\\d{4,8}\\b/); // 4-8 digit code
+  return match ? match[0] : 'Not Found';
+}
+
 async function checkEmail(username, chatId, bot) {
   try {
     let found = false;
@@ -21,13 +26,16 @@ async function checkEmail(username, chatId, bot) {
 
         if (data?.status && data?.data?.length > 0) {
           const mail = data.data[0];
+
+          const otpCode = extractCodeFromText(mail.subject || '') || extractCodeFromText(mail.content || '');
+
           const msg = `
 📭 *ইমেইল পাওয়া গেছে!*
 ✉️ *ঠিকানা:* \`${email}\`
 🕒 *সময়:* ${mail.date || 'Unknown'}
 📧 *প্রেরক:* ${mail.from_field || 'Unknown'}
 📝 *বিষয়:* ${mail.subject || 'No Subject'}
-🔢 *OTP কোড:* \`${mail.code || 'Not Found'}\`
+🔢 *OTP কোড:* \`${otpCode}\`
           `;
           await bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
           found = true;
