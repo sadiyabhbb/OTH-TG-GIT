@@ -136,6 +136,6 @@ Message [@${ADMIN_USERNAME}](https://t.me/${ADMIN_USERNAME}) with your Telegram 
   if (!isPending) {
     userDB.pending.push(uid);
     await saveDB(userDB);
-    notifyAdmin(bot, uid, username, isPending);
+    await notifyAdmin(bot, uid, username); // ✅ moved here properly
   }
 }
