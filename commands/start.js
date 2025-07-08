@@ -26,17 +26,17 @@ async function handleStart(bot, chatId, from, callbackId = null, messageId = nul
   const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
   const isAdmin = uid === Number(ADMIN_UID);
 
-  let userDB = await loadDB();
-  const isApproved = userDB.approved.includes(uid);
-  const isBanned = userDB.banned.includes(uid);
-  const isPending = userDB.pending.includes(uid);
+  let userDB = await loadDB(); // always latest DB
+  let isApproved = userDB.approved.map(x => x.toString()).includes(uid.toString());
+  let isBanned = userDB.banned.map(x => x.toString()).includes(uid.toString());
+  let isPending = userDB.pending.map(x => x.toString()).includes(uid.toString());
 
   // 🚫 Banned user
   if (isBanned) {
     return bot.sendMessage(chatId, '🚫 You are banned from using this bot.');
   }
 
-  // 👑 Admin or ✅ Approved User
+  // ✅ Approved or Admin
   if (isAdmin || isApproved) {
     const message = isAdmin
       ? `👑 *Welcome, Admin!*
@@ -64,9 +64,7 @@ Let's give you the *best experience possible*.
 🧠 Smart & user-friendly interface
 
 🟢 *To begin:*  
-➡️ Type /start
-
-Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
+➡️ Tap any button below`;
 
     const buttons = isAdmin
       ? [
@@ -107,9 +105,8 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
     }
   }
 
-  // ⏳ Not approved user → show styled message & notify admin
-  const restrictedMsg =
-`🚫 *Access Restricted*
+  // ❗ User is not approved — show restriction message + add to pending + notify admin
+  const restrictedMsg = `🚫 *Access Restricted*
 
 👋 *Hello, ${cleanUsername}!*
 Thanks for your interest in using *PremiumBot*.
@@ -133,9 +130,10 @@ Message [@${ADMIN_USERNAME}](https://t.me/${ADMIN_USERNAME}) with your Telegram 
 
   await bot.sendMessage(chatId, restrictedMsg, { parse_mode: 'Markdown' });
 
+  // ✅ Only push to pending if not already there
   if (!isPending) {
     userDB.pending.push(uid);
-    await saveDB(userDB);
-    await notifyAdmin(bot, uid, username); // ✅ moved here properly
+    await saveDB(userDB); // ✅ persist it
+    notifyAdmin(bot, uid, username, false);
   }
 }
