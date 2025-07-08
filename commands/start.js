@@ -4,29 +4,29 @@ const notifyAdmin = require('../utils/notifyAdmin');
 
 module.exports = (bot) => {
   // /start command
-  bot.onText(/\/start/, (msg) => {
-    handleStart(bot, msg.chat.id, msg.from);
+  bot.onText(/\/start/, async (msg) => {
+    await handleStart(bot, msg.chat.id, msg.from);
   });
 
   // back button handler
-  bot.on('callback_query', (query) => {
+  bot.on('callback_query', async (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
     const from = query.from;
 
     if (data === 'back') {
-      handleStart(bot, chatId, from, query.id, query.message.message_id);
+      await handleStart(bot, chatId, from, query.id, query.message.message_id);
     }
   });
 };
 
-function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
+async function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const uid = from.id;
   const username = from.username || 'NoUsername';
   const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
   const isAdmin = uid === Number(ADMIN_UID);
 
-  const userDB = loadDB();
+  let userDB = await loadDB();
   const isApproved = userDB.approved.includes(uid);
   const isBanned = userDB.banned.includes(uid);
   const isPending = userDB.pending.includes(uid);
@@ -92,7 +92,7 @@ Thanks for joining — let's make it simple, fast & premium. 🧡🤖`;
         ];
 
     if (callbackId && messageId) {
-      bot.answerCallbackQuery(callbackId);
+      await bot.answerCallbackQuery(callbackId);
       return bot.editMessageText(message, {
         chat_id: chatId,
         message_id: messageId,
@@ -131,12 +131,11 @@ Message [@${ADMIN_USERNAME}](https://t.me/${ADMIN_USERNAME}) with your Telegram 
 🙏 We appreciate your patience and understanding.  
 — *The PremiumBot Team 🤖*`;
 
-  bot.sendMessage(chatId, restrictedMsg, { parse_mode: 'Markdown' });
+  await bot.sendMessage(chatId, restrictedMsg, { parse_mode: 'Markdown' });
 
   if (!isPending) {
     userDB.pending.push(uid);
-    saveDB(userDB);
+    await saveDB(userDB);
+    notifyAdmin(bot, uid, username, isPending);
   }
-
-  notifyAdmin(bot, uid, username, isPending);
 }
