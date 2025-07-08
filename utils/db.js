@@ -1,34 +1,46 @@
+const fs = require('fs');
 const axios = require('axios');
-const BACKUP_API = 'https://users-backup.onrender.com/users.json'; // Static JSON endpoint
-const SAVE_API = 'https://users-backup.onrender.com/upload'; // File upload endpoint
+const FormData = require('form-data');
+const path = './users.json';
 
-async function loadDB() {
+const BACKUP_URL = 'https://users-backup-1.onrender.com/uploads/users.json';
+const BACKUP_UPLOAD = 'https://users-backup-1.onrender.com/upload'; // POST form-data (field: file)
+
+function loadLocal() {
   try {
-    const { data } = await axios.get(BACKUP_API);
-    return data || { approved: [], pending: [], banned: [] };
-  } catch (error) {
-    console.error('❌ LoadDB Error:', error.message);
+    const data = fs.readFileSync(path, 'utf8');
+    return JSON.parse(data);
+  } catch {
     return { approved: [], pending: [], banned: [] };
   }
 }
 
-const fs = require('fs');
-const FormData = require('form-data');
+async function loadDB() {
+  try {
+    const { data } = await axios.get(BACKUP_URL, { timeout: 5000 });
+    fs.writeFileSync(path, JSON.stringify(data, null, 2));
+    return data;
+  } catch (err) {
+    console.warn('⚠️ Remote backup load failed. Using local DB.');
+    return loadLocal();
+  }
+}
 
 async function saveDB(data) {
   try {
-    fs.writeFileSync('./users.json', JSON.stringify(data, null, 2));
+    fs.writeFileSync(path, JSON.stringify(data, null, 2));
 
     const form = new FormData();
-    form.append('file', fs.createReadStream('./users.json'));
+    form.append('file', fs.createReadStream(path), 'users.json');
 
-    await axios.post(SAVE_API, form, {
-      headers: form.getHeaders()
+    await axios.post(BACKUP_UPLOAD, form, {
+      headers: form.getHeaders(),
+      timeout: 5000
     });
 
-    console.log('✅ DB backed up remotely');
-  } catch (error) {
-    console.error('❌ SaveDB Error:', error.message);
+    console.log('✅ Backup uploaded to remote server.');
+  } catch (err) {
+    console.error('❌ Failed to save remote backup:', err.message);
   }
 }
 
