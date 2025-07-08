@@ -26,10 +26,12 @@ async function handleStart(bot, chatId, from, callbackId = null, messageId = nul
   const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
   const isAdmin = uid === Number(ADMIN_UID);
 
-  let userDB = await loadDB(); // always latest DB
-  let isApproved = userDB.approved.map(x => x.toString()).includes(uid.toString());
-  let isBanned = userDB.banned.map(x => x.toString()).includes(uid.toString());
-  let isPending = userDB.pending.map(x => x.toString()).includes(uid.toString());
+  let userDB = await loadDB();
+
+  // ✅ Ensure type consistency
+  const isApproved = userDB.approved.some(id => String(id) === String(uid));
+  const isBanned = userDB.banned.some(id => String(id) === String(uid));
+  const isPending = userDB.pending.some(id => String(id) === String(uid));
 
   // 🚫 Banned user
   if (isBanned) {
@@ -105,7 +107,7 @@ Let's give you the *best experience possible*.
     }
   }
 
-  // ❗ User is not approved — show restriction message + add to pending + notify admin
+  // ❗ Not approved — add to pending + notify admin
   const restrictedMsg = `🚫 *Access Restricted*
 
 👋 *Hello, ${cleanUsername}!*
@@ -130,10 +132,9 @@ Message [@${ADMIN_USERNAME}](https://t.me/${ADMIN_USERNAME}) with your Telegram 
 
   await bot.sendMessage(chatId, restrictedMsg, { parse_mode: 'Markdown' });
 
-  // ✅ Only push to pending if not already there
   if (!isPending) {
     userDB.pending.push(uid);
-    await saveDB(userDB); // ✅ persist it
+    await saveDB(userDB); // ✅ Save it
     notifyAdmin(bot, uid, username, false);
   }
 }
