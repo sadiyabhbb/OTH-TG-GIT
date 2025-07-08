@@ -2,8 +2,8 @@ const { ADMIN_UID, ADMIN_USERNAME } = require('../config/botConfig');
 const { loadDB } = require('../utils/db');
 
 module.exports = (bot) => {
-  function generateUserList() {
-    const userDB = loadDB();
+  async function generateUserList() {
+    const userDB = await loadDB();
 
     const format = (arr) => arr.length ? arr.map(id => `\`${id}\``).join(', ') : '_None_';
     const message = 
@@ -16,13 +16,13 @@ module.exports = (bot) => {
   }
 
   // /users command
-  bot.onText(/\/users/, (msg) => {
+  bot.onText(/\/users/, async (msg) => {
     const userId = msg.from.id;
     const username = msg.from.username || 'NoUsername';
 
     if (userId !== ADMIN_UID && username !== ADMIN_USERNAME) return;
 
-    const message = generateUserList();
+    const message = await generateUserList();
 
     bot.sendMessage(msg.chat.id, message, {
       parse_mode: 'Markdown'
@@ -30,7 +30,7 @@ module.exports = (bot) => {
   });
 
   // Callback for users button
-  bot.on('callback_query', (query) => {
+  bot.on('callback_query', async (query) => {
     const data = query.data;
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
@@ -40,7 +40,7 @@ module.exports = (bot) => {
     if (data === 'users') {
       if (userId !== ADMIN_UID && username !== ADMIN_USERNAME) return;
 
-      const message = generateUserList();
+      const message = await generateUserList();
 
       bot.editMessageText(message, {
         chat_id: chatId,
