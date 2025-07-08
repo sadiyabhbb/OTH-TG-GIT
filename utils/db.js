@@ -1,38 +1,35 @@
-const fs = require('fs');
 const axios = require('axios');
-const FormData = require('form-data');
+const BACKUP_API = 'https://users-backup.onrender.com/users.json'; // Static JSON endpoint
+const SAVE_API = 'https://users-backup.onrender.com/upload'; // File upload endpoint
 
-const path = './users.json';
-
-// ✅ Local DB Load
-function loadDB() {
+async function loadDB() {
   try {
-    const data = fs.readFileSync(path, 'utf8');
-    return JSON.parse(data);
+    const { data } = await axios.get(BACKUP_API);
+    return data || { approved: [], pending: [], banned: [] };
   } catch (error) {
+    console.error('❌ LoadDB Error:', error.message);
     return { approved: [], pending: [], banned: [] };
   }
 }
 
-// ✅ Save both locally & to backup server
-function saveDB(data) {
-  // Save locally
-  fs.writeFileSync(path, JSON.stringify(data, null, 2));
+const fs = require('fs');
+const FormData = require('form-data');
 
-  // 🔄 Backup to external server (your Render drive server)
-  const form = new FormData();
-  form.append('file', Buffer.from(JSON.stringify(data, null, 2)), {
-    filename: 'users.json',
-    contentType: 'application/json'
-  });
+async function saveDB(data) {
+  try {
+    fs.writeFileSync('./users.json', JSON.stringify(data, null, 2));
 
-  axios.post('https://users-backup.onrender.com/upload', form, {
-    headers: form.getHeaders()
-  }).then(() => {
-    console.log('✅ UserDB uploaded to backup server');
-  }).catch((err) => {
-    console.error('❌ Backup upload failed:', err.message);
-  });
+    const form = new FormData();
+    form.append('file', fs.createReadStream('./users.json'));
+
+    await axios.post(SAVE_API, form, {
+      headers: form.getHeaders()
+    });
+
+    console.log('✅ DB backed up remotely');
+  } catch (error) {
+    console.error('❌ SaveDB Error:', error.message);
+  }
 }
 
 module.exports = { loadDB, saveDB };
