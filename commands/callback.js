@@ -9,7 +9,8 @@ module.exports = (bot) => {
     const username = query.from.username || "NoUsername";
     const userId = query.from.id;
 
-    const db = loadDB();
+    const db = await loadDB(); // ✅ async fix
+
     const isAdmin = (
       (username?.toLowerCase() === ADMIN_USERNAME?.toLowerCase()) ||
       (userId.toString() === ADMIN_UID.toString())
