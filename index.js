@@ -12,11 +12,13 @@ app.get('/', (req, res) => {
   res.send('🤖 Telegram bot is live and using polling!');
 });
 
+// Uptime tracker & globals
 global.botStartTime = Date.now();
 global.activeEmails = {};
 
 (async () => {
   try {
+    // ✅ Load DB (from remote if available)
     const db = await loadDB();
     global.userDB = db;
   } catch (err) {
@@ -24,9 +26,15 @@ global.activeEmails = {};
     global.userDB = { approved: [], pending: [], banned: [] };
   }
 
+  // ✅ Start the bot after DB is ready
   const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-  // ✅ All command files
+  // ✅ Polling error catcher
+  bot.on("polling_error", (error) => {
+    console.error("❌ Polling error:", error.response?.data || error.message || error);
+  });
+
+  // ✅ Load all command files from /commands
   const commandsPath = path.join(__dirname, 'commands');
   if (fs.existsSync(commandsPath)) {
     const files = fs.readdirSync(commandsPath);
@@ -44,6 +52,7 @@ global.activeEmails = {};
     }
   }
 
+  // ✅ Start express server (needed for Render / UptimeRobot)
   app.listen(port, () => {
     console.log(`✅ Bot server running via polling on port ${port}`);
   });
