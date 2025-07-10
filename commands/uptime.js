@@ -50,7 +50,7 @@ module.exports = (bot) => {
 🛡️ *HARD - CORE PROTECTION*
 
 ━━━━━━━━━━━━━━━━━━━━━━━  
-💬 𝐁𝐎𝐓 𝐁𝐘 ⟦ 𝐑 𝐈 𝐇 𝐀 𝐃 🐻‍❄️ ⟧  
+💬 𝐁𝐎𝐓 𝐌𝐀𝐊𝐄 𝐁𝐘 ⟦ 𝐑 𝐈 𝐇 𝐀 𝐃 🐻‍❄️ ⟧  
 ━━━━━━━━━━━━━━━━━━━━━━━`;
 
       bot.editMessageText(text, {
