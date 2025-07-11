@@ -22,7 +22,6 @@ const showProgressBar = async (bot, chatId) => {
       message_id: sent.message_id,
     });
   }
-  // loading শেষ হলে মেসেজ ডিলিট
   await bot.deleteMessage(chatId, sent.message_id);
 };
 
@@ -44,7 +43,7 @@ module.exports = (bot) => {
 
     if (validLinks.some(link => text.startsWith(link))) {
       try {
-        await showProgressBar(bot, chatId); // loading animation + delete message
+        await showProgressBar(bot, chatId);
 
         const apiBase = (await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`)).data.api;
         const response = await axios.get(`${apiBase}/alldl?url=${encodeURIComponent(text)}`);
@@ -57,7 +56,6 @@ module.exports = (bot) => {
 
         const caption = ext === ".mp4" ? "🎥 Video Downloaded:" : "🖼️ Image Downloaded:";
 
-        // cache ফোল্ডার তৈরি
         const cacheDir = path.join(__dirname, "cache");
         if (!fs.existsSync(cacheDir)) {
           fs.mkdirSync(cacheDir, { recursive: true });
@@ -68,7 +66,17 @@ module.exports = (bot) => {
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
 
         if (ext === ".mp4") {
-          await bot.sendVideo(chatId, filePath, { caption });
+          await bot.sendVideo(chatId, filePath, {
+            caption,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: "𝐑 𝐈 𝐇 𝐀 𝐃 🐻‍❄️", url: "https://t.me/rx_rihad" },
+                  { text: "𝐆𝐑𝐎𝐔𝐏", url: "https://t.me/likhon_premium" }
+                ]
+              ]
+            }
+          });
         } else {
           await bot.sendDocument(chatId, filePath, { caption });
         }
