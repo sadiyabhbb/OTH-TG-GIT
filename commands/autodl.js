@@ -45,7 +45,7 @@ module.exports = (bot) => {
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
 
         // লিংক বাদ দিয়ে শুধু ক্যাপশন সহ ফাইল পাঠানো
-        await bot.sendvideo(chatId, filePath, { caption });
+        await bot.sendVideo(chatId, filePath, { caption });
 
         fs.unlinkSync(filePath); // Remove after sending
 
