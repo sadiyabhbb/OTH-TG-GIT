@@ -2,8 +2,8 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-// 🔄 Animation bar
-const showProgressBar = async () => {
+// 🔄 Animation bar for Telegram
+const showProgressBar = async (bot, chatId) => {
   const steps = [
     "🔄 LOADING...\n[█▒▒▒▒▒▒▒▒▒]",
     "🔄 LOADING...\n[███▒▒▒▒▒▒▒]",
@@ -13,11 +13,15 @@ const showProgressBar = async () => {
     "🔄 LOADING...\n[██████████]",
     "✅ LOADED!\n[██████████]"
   ];
-  for (const step of steps) {
-    process.stdout.write(`\r${step}`);
-    await new Promise((r) => setTimeout(r, 300));
+
+  const sent = await bot.sendMessage(chatId, steps[0]);
+  for (let i = 1; i < steps.length; i++) {
+    await new Promise((res) => setTimeout(res, 300));
+    await bot.editMessageText(steps[i], {
+      chat_id: chatId,
+      message_id: sent.message_id,
+    });
   }
-  console.log("\n");
 };
 
 module.exports = (bot) => {
@@ -38,9 +42,7 @@ module.exports = (bot) => {
 
     if (validLinks.some(link => text.startsWith(link))) {
       try {
-        await bot.sendMessage(chatId, "⏳ Downloading... Please wait");
-
-        await showProgressBar(); // 👈 এটা console এ animation দিবে
+        await showProgressBar(bot, chatId); // 🔄 এখানে মেসেজে animation
 
         const apiBase = (await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`)).data.api;
         const response = await axios.get(`${apiBase}/alldl?url=${encodeURIComponent(text)}`);
