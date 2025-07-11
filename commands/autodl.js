@@ -1,83 +1,50 @@
 const axios = require("axios");
 const fs = require("fs-extra");
+const path = require("path");
 
-const baseApiUrl = async () => {
-  const base = await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`);
-  return base.data.api;
-};
+module.exports = (bot) => {
+  bot.on("message", async (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
 
-const config = {
-  name: "autodl",
-  version: "2.0",
-  author: "Dipto",
-  credits: "Dipto",
-  description: "Auto download video from TikTok, Facebook, Instagram, YouTube, and more",
-  category: "media",
-  commandCategory: "media",
-  usePrefix: false, // Prefix ব্যবহার করবেন না
-  dependencies: {
-    "fs-extra": "",
-  },
-};
+    if (!text) return;
 
-const onStart = () => {};
-const onChat = async ({ api, event }) => {
-  let dipto = event.body ? event.body : "", ex, cp;
-  try {
-    if (
-      dipto.startsWith("https://vt.tiktok.com") ||
-      dipto.startsWith("https://www.tiktok.com/") ||
-      dipto.startsWith("https://www.facebook.com") ||
-      dipto.startsWith("https://www.instagram.com/") ||
-      dipto.startsWith("https://youtu.be/") ||
-      dipto.startsWith("https://youtube.com/") ||
-      dipto.startsWith("https://x.com/") ||
-      dipto.startsWith("https://www.instagram.com/p/") ||
-      dipto.startsWith("https://pin.it/") ||
-      dipto.startsWith("https://twitter.com/") ||
-      dipto.startsWith("https://vm.tiktok.com") ||
-      dipto.startsWith("https://fb.watch")
-    ) {
-      api.setMessageReaction("⌛", event.messageID, {}, true);
-      const w = await api.sendMessage("Wait a moment, processing your request...", event.threadID);
-      const response = await axios.get(`${await baseApiUrl()}/alldl?url=${encodeURIComponent(dipto)}`);
-      const d = response.data;
+    const validLinks = [
+      "https://vt.tiktok.com", "https://www.tiktok.com/",
+      "https://www.facebook.com", "https://www.instagram.com/",
+      "https://youtu.be/", "https://youtube.com/",
+      "https://x.com/", "https://twitter.com/",
+      "https://vm.tiktok.com", "https://fb.watch",
+      "https://pin.it/"
+    ];
 
-      if (d.result.includes(".jpg")) {
-        ex = ".jpg";
-        cp = "Here's your photo:";
-      } else if (d.result.includes(".png")) {
-        ex = ".png";
-        cp = "Here's your photo:";
-      } else if (d.result.includes(".jpeg")) {
-        ex = ".jpeg";
-        cp = "Here's your photo:";
-      } else {
-        ex = ".mp4";
-        cp = d.cp;
+    if (validLinks.some(link => text.startsWith(link))) {
+      try {
+        await bot.sendMessage(chatId, "⏳ Downloading... Please wait");
+
+        const apiBase = (await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`)).data.api;
+        const response = await axios.get(`${apiBase}/alldl?url=${encodeURIComponent(text)}`);
+        const result = response.data.result;
+
+        const ext = result.includes(".jpg") ? ".jpg"
+                  : result.includes(".png") ? ".png"
+                  : result.includes(".jpeg") ? ".jpeg"
+                  : ".mp4";
+
+        const caption = ext === ".mp4" ? "🎥 Video Downloaded:" : "🖼️ Image Downloaded:";
+        const filePath = path.join(__dirname, `cache/file${ext}`);
+
+        const file = await axios.get(result, { responseType: "arraybuffer" });
+        fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
+
+        await bot.sendDocument(chatId, filePath, { caption: `${caption}\n✅ Link: ${result}` });
+
+        fs.unlinkSync(filePath); // Remove after sending
+
+      } catch (err) {
+        console.error("❌ Error downloading file:", err.message);
+        await bot.sendMessage(chatId, "❌ Download failed: " + err.message);
       }
-
-      const path = __dirname + `/cache/video${ex}`;
-      fs.writeFileSync(path, Buffer.from((await axios.get(d.result, { responseType: "arraybuffer" })).data, "binary"));
-      api.setMessageReaction("✅", event.messageID, {}, true);
-      api.unsendMessage(w.messageID);
-      await api.sendMessage({
-          body: `${cp}\n✅ | Link: ${d.result}`,
-          attachment: fs.createReadStream(path),
-        }, event.threadID, () => fs.unlinkSync(path), event.messageID
-      );
     }
-  } catch (err) {
-    api.setMessageReaction("❌", event.messageID, {}, true);
-    console.log(err);
-    api.sendMessage(`Error: ${err.message}`, event.threadID, event.messageID);
-  }
-};
-
-module.exports = {
-  config,
-  onChat,
-  onStart,
-  run: onStart,
-  handleEvent: onChat,
+  });
 };
