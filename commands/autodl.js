@@ -2,6 +2,24 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
+// 🔄 Animation bar
+const showProgressBar = async () => {
+  const steps = [
+    "🔄 LOADING...\n[█▒▒▒▒▒▒▒▒▒]",
+    "🔄 LOADING...\n[███▒▒▒▒▒▒▒]",
+    "🔄 LOADING...\n[█████▒▒▒▒▒]",
+    "🔄 LOADING...\n[███████▒▒▒]",
+    "🔄 LOADING...\n[████████▒▒]",
+    "🔄 LOADING...\n[██████████]",
+    "✅ LOADED!\n[██████████]"
+  ];
+  for (const step of steps) {
+    process.stdout.write(`\x1b[2K\r${step}`);
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  console.log("\n");
+};
+
 module.exports = (bot) => {
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -22,35 +40,31 @@ module.exports = (bot) => {
       try {
         await bot.sendMessage(chatId, "⏳ Downloading... Please wait");
 
+        await showProgressBar(); // show CLI animation
+
         const apiBase = (await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`)).data.api;
         const response = await axios.get(`${apiBase}/alldl?url=${encodeURIComponent(text)}`);
         const result = response.data.result;
 
-        const ext = result.includes(".jpg") ? ".jpg"
-                  : result.includes(".png") ? ".png"
-                  : result.includes(".jpeg") ? ".jpeg"
-                  : ".mp4";
+        // শুধু mp4 হলে কাজ করবে
+        if (!result.includes(".mp4")) {
+          return bot.sendMessage(chatId, "❌ Only video (.mp4) links are supported.");
+        }
 
-        const caption = ext === ".mp4" ? "🎥 Video Downloaded:" : "🖼️ Image Downloaded:";
+        const caption = "🎥 Video Downloaded:";
 
-        // cache ফোল্ডার তৈরি
         const cacheDir = path.join(__dirname, "cache");
         if (!fs.existsSync(cacheDir)) {
           fs.mkdirSync(cacheDir, { recursive: true });
         }
 
-        const filePath = path.join(cacheDir, `file${ext}`);
+        const filePath = path.join(cacheDir, `file.mp4`);
         const file = await axios.get(result, { responseType: "arraybuffer" });
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
 
-        if (ext === ".mp4") {
-          // সব ভিডিওই sendVideo() দিয়ে যাবে, preview Telegram decide করবে
-          await bot.sendVideo(chatId, filePath, { caption });
-        } else {
-          await bot.sendDocument(chatId, filePath, { caption });
-        }
+        await bot.sendVideo(chatId, filePath, { caption });
 
-        fs.unlinkSync(filePath); // Remove downloaded file
+        fs.unlinkSync(filePath); // remove file after sending
 
       } catch (err) {
         console.error("❌ Error downloading file:", err.message);
