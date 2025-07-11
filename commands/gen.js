@@ -8,7 +8,7 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
 
-    const userDB = loadDB(); // ✅ always fresh
+    const userDB = await loadDB(); // ✅ Await added here
 
     if (userId !== ADMIN_UID && !userDB.approved.includes(userId)) {
       return bot.sendMessage(chatId, `⛔ You are not approved to use this bot.\nAsk @${ADMIN_USERNAME} for access.`);
