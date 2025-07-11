@@ -14,7 +14,7 @@ const showProgressBar = async () => {
     "✅ LOADED!\n[██████████]"
   ];
   for (const step of steps) {
-    process.stdout.write(`\x1b[2K\r${step}`);
+    process.stdout.write(`\r${step}`);
     await new Promise((r) => setTimeout(r, 300));
   }
   console.log("\n");
@@ -40,31 +40,36 @@ module.exports = (bot) => {
       try {
         await bot.sendMessage(chatId, "⏳ Downloading... Please wait");
 
-        await showProgressBar(); // show CLI animation
+        await showProgressBar(); // 👈 এটা console এ animation দিবে
 
         const apiBase = (await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`)).data.api;
         const response = await axios.get(`${apiBase}/alldl?url=${encodeURIComponent(text)}`);
         const result = response.data.result;
 
-        // শুধু mp4 হলে কাজ করবে
-        if (!result.includes(".mp4")) {
-          return bot.sendMessage(chatId, "❌ Only video (.mp4) links are supported.");
-        }
+        const ext = result.includes(".jpg") ? ".jpg"
+                  : result.includes(".png") ? ".png"
+                  : result.includes(".jpeg") ? ".jpeg"
+                  : ".mp4";
 
-        const caption = "🎥 Video Downloaded:";
+        const caption = ext === ".mp4" ? "🎥 Video Downloaded:" : "🖼️ Image Downloaded:";
 
+        // cache ফোল্ডার তৈরি
         const cacheDir = path.join(__dirname, "cache");
         if (!fs.existsSync(cacheDir)) {
           fs.mkdirSync(cacheDir, { recursive: true });
         }
 
-        const filePath = path.join(cacheDir, `file.mp4`);
+        const filePath = path.join(cacheDir, `file${ext}`);
         const file = await axios.get(result, { responseType: "arraybuffer" });
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
 
-        await bot.sendVideo(chatId, filePath, { caption });
+        if (ext === ".mp4") {
+          await bot.sendVideo(chatId, filePath, { caption });
+        } else {
+          await bot.sendDocument(chatId, filePath, { caption });
+        }
 
-        fs.unlinkSync(filePath); // remove file after sending
+        fs.unlinkSync(filePath);
 
       } catch (err) {
         console.error("❌ Error downloading file:", err.message);
