@@ -33,21 +33,24 @@ module.exports = (bot) => {
 
         const caption = ext === ".mp4" ? "🎥 Video Downloaded:" : "🖼️ Image Downloaded:";
 
-        // cache ফোল্ডার তৈরি, যদি না থাকে
+        // cache ফোল্ডার তৈরি
         const cacheDir = path.join(__dirname, "cache");
         if (!fs.existsSync(cacheDir)) {
           fs.mkdirSync(cacheDir, { recursive: true });
         }
 
         const filePath = path.join(cacheDir, `file${ext}`);
-
         const file = await axios.get(result, { responseType: "arraybuffer" });
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
 
-        // লিংক বাদ দিয়ে শুধু ক্যাপশন সহ ফাইল পাঠানো
-        await bot.sendVideo(chatId, filePath, { caption });
+        if (ext === ".mp4") {
+          // সব ভিডিওই sendVideo() দিয়ে যাবে, preview Telegram decide করবে
+          await bot.sendVideo(chatId, filePath, { caption });
+        } else {
+          await bot.sendDocument(chatId, filePath, { caption });
+        }
 
-        fs.unlinkSync(filePath); // Remove after sending
+        fs.unlinkSync(filePath); // Remove downloaded file
 
       } catch (err) {
         console.error("❌ Error downloading file:", err.message);
