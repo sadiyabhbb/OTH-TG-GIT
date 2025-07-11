@@ -22,6 +22,8 @@ const showProgressBar = async (bot, chatId) => {
       message_id: sent.message_id,
     });
   }
+  // loading শেষ হলে মেসেজ ডিলিট
+  await bot.deleteMessage(chatId, sent.message_id);
 };
 
 module.exports = (bot) => {
@@ -42,7 +44,7 @@ module.exports = (bot) => {
 
     if (validLinks.some(link => text.startsWith(link))) {
       try {
-        await showProgressBar(bot, chatId); // 🔄 এখানে মেসেজে animation
+        await showProgressBar(bot, chatId); // loading animation + delete message
 
         const apiBase = (await axios.get(`https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`)).data.api;
         const response = await axios.get(`${apiBase}/alldl?url=${encodeURIComponent(text)}`);
