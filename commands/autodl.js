@@ -44,7 +44,8 @@ module.exports = (bot) => {
         const file = await axios.get(result, { responseType: "arraybuffer" });
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
 
-        await bot.sendDocument(chatId, filePath, { caption: `${caption}\n✅ Link: ${result}` });
+        // লিংক বাদ দিয়ে শুধু ক্যাপশন সহ ফাইল পাঠানো
+        await bot.sendDocument(chatId, filePath, { caption });
 
         fs.unlinkSync(filePath); // Remove after sending
 
