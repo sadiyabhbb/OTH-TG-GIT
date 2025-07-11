@@ -32,7 +32,14 @@ module.exports = (bot) => {
                   : ".mp4";
 
         const caption = ext === ".mp4" ? "🎥 Video Downloaded:" : "🖼️ Image Downloaded:";
-        const filePath = path.join(__dirname, `cache/file${ext}`);
+
+        // cache ফোল্ডার তৈরি, যদি না থাকে
+        const cacheDir = path.join(__dirname, "cache");
+        if (!fs.existsSync(cacheDir)) {
+          fs.mkdirSync(cacheDir, { recursive: true });
+        }
+
+        const filePath = path.join(cacheDir, `file${ext}`);
 
         const file = await axios.get(result, { responseType: "arraybuffer" });
         fs.writeFileSync(filePath, Buffer.from(file.data, "binary"));
