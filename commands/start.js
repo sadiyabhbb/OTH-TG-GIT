@@ -23,7 +23,7 @@ module.exports = (bot) => {
 async function handleStart(bot, chatId, from, callbackId = null, messageId = null) {
   const uid = from.id;
   const username = from.username || 'NoUsername';
-  const cleanUsername = username.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+  const cleanUsername = username.replace(/[_*[\\]()~`>#+=|{}.!-]/g, '\\$&');
   const isAdmin = uid === Number(ADMIN_UID);
 
   let userDB = await loadDB();
