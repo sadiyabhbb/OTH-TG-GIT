@@ -1,20 +1,10 @@
 // File: commands/cfb.js
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const randomUseragent = require('random-useragent');
 const fetch = require('node-fetch');
 
 puppeteer.use(StealthPlugin());
-
-module.exports.config = {
-  name: "cfb",
-  description: "Create Facebook account using hotmail999 and fetch confirmation code",
-  usage: "cfb <number> - <password> - <mailPrefix>",
-  cooldown: 5,
-  permissions: "all",
-  credits: "RIN"
-};
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -63,7 +53,6 @@ async function createFacebookAccount(name, dob, email, password) {
   try {
     const page = await browser.newPage();
     await page.setUserAgent(randomUseragent.getRandom());
-
     await page.goto('https://www.facebook.com/reg', { waitUntil: 'networkidle2', timeout: 60000 });
 
     await humanMove(page);
@@ -78,7 +67,6 @@ async function createFacebookAccount(name, dob, email, password) {
 
     await page.click(['input[value="1"]', 'input[value="2"]'][randomInt(0, 1)]);
     await humanMove(page);
-
     await page.click('button[name="websubmit"]');
     await new Promise(res => setTimeout(res, randomInt(5000, 9000)));
 
@@ -110,17 +98,29 @@ async function getVerificationCode(email) {
   }
 }
 
-module.exports.onCall = async function ({ message, args }) {
-  try {
-    if (args.length < 5) return message.reply("Usage: cfb <number> - <password> - <mailPrefix>");
+module.exports = (bot) => {
+  bot.on('message', async (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text || "";
 
-    const count = parseInt(args[0]);
-    if (isNaN(count) || count <= 0) return message.reply("Invalid number of accounts.");
+    if (!text.startsWith('/cfb')) return;
 
-    if (args[1] !== '-') return message.reply("Format: cfb <number> - <password> - <mailPrefix>");
+    const args = text.trim().split(/\s+/);
+    if (args.length < 5) {
+      return bot.sendMessage(chatId, "Usage: /cfb <number> - <password> - <mailPrefix>");
+    }
 
-    const password = args[2];
-    const prefix = args[4];
+    const count = parseInt(args[1]);
+    if (isNaN(count) || count <= 0) {
+      return bot.sendMessage(chatId, "❌ Invalid number of accounts.");
+    }
+
+    if (args[2] !== '-') {
+      return bot.sendMessage(chatId, "❌ Format: /cfb <number> - <password> - <mailPrefix>");
+    }
+
+    const password = args[3];
+    const prefix = args[5];
     let results = [];
 
     for (let i = 0; i < count; i++) {
@@ -128,15 +128,15 @@ module.exports.onCall = async function ({ message, args }) {
       const dob = randomDate();
       const email = randomEmail(prefix);
 
-      await message.reply(`🔄 Creating account ${i + 1} → ${email}`);
+      await bot.sendMessage(chatId, `🔄 Creating account ${i + 1} → ${email}`);
       const acc = await createFacebookAccount(name, dob, email, password);
 
       if (!acc) {
-        await message.reply(`❌ Failed: ${email}`);
+        await bot.sendMessage(chatId, `❌ Failed: ${email}`);
         continue;
       }
 
-      await message.reply(`⏳ Waiting for code: ${email}`);
+      await bot.sendMessage(chatId, `⏳ Waiting for code: ${email}`);
       let code = null;
       for (let t = 0; t < 12; t++) {
         code = await getVerificationCode(email);
@@ -145,24 +145,21 @@ module.exports.onCall = async function ({ message, args }) {
       }
 
       if (!code) {
-        await message.reply(`❌ Code not found: ${email}`);
+        await bot.sendMessage(chatId, `❌ Code not found: ${email}`);
         results.push({ ...acc, code: null });
       } else {
-        await message.reply(`✅ Code for ${email}: ${code}`);
+        await bot.sendMessage(chatId, `✅ Code for ${email}: ${code}`);
         results.push({ ...acc, code });
       }
     }
 
-    if (!results.length) return message.reply("❌ No accounts created.");
+    if (!results.length) return bot.sendMessage(chatId, "❌ No accounts created.");
 
     let summary = `🎉 Created ${results.length} account(s):\n\n`;
     results.forEach((r, i) => {
       summary += `#${i + 1}\n👤 ${r.name}\n📧 ${r.email}\n🔑 ${r.password}\n🎂 ${r.dob.day}/${r.dob.month}/${r.dob.year}\n🆔 ${r.uid}\n📨 ${r.code ?? "Not received"}\n\n`;
     });
 
-    await message.reply(summary);
-
-  } catch (err) {
-    await message.reply(`❌ Error: ${err.message}`);
-  }
+    bot.sendMessage(chatId, summary);
+  });
 };
